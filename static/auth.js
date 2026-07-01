@@ -104,13 +104,17 @@ function updateAuthUI(user) {
   document.querySelectorAll(".auth-required").forEach((el) => (el.hidden = !!user));
   const noteForm = document.getElementById("note-form");
   if (noteForm) noteForm.hidden = !user;
+  const taskForm = document.getElementById("task-form");
+  if (taskForm) taskForm.hidden = !user;
 
   if (typeof onAuthChanged === "function") onAuthChanged(user);
 
   if (user) {
     loadNotes();
+    loadTasks();
   } else {
     document.getElementById("notes-box").innerHTML = "";
+    document.getElementById("tasks-box").innerHTML = "";
   }
 }
 
@@ -198,6 +202,85 @@ async function removeFavoriteDb(id) {
   if (error) reportDbError("suppression favori", error);
 }
 
+// ===================== Tâches =====================
+const taskForm = document.getElementById("task-form");
+if (taskForm) {
+  taskForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!supabaseClient || !currentUser) return;
+    const title = document.getElementById("task-title").value.trim();
+    const dueDate = document.getElementById("task-due-date").value || null;
+    const priority = document.getElementById("task-priority").value;
+
+    const { error } = await supabaseClient.from("tasks").insert({
+      user_id: currentUser.id,
+      title,
+      due_date: dueDate,
+      priority,
+    });
+    if (error) { reportDbError("ajout tâche", error); return; }
+
+    taskForm.reset();
+    document.getElementById("task-priority").value = "normal";
+    loadTasks();
+  });
+}
+
+async function toggleTaskDone(id, done) {
+  if (!supabaseClient || !currentUser) return;
+  const { error } = await supabaseClient.from("tasks").update({ done }).eq("id", id);
+  if (error) reportDbError("mise à jour tâche", error);
+}
+
+async function loadTasks() {
+  const box = document.getElementById("tasks-box");
+  if (!supabaseClient || !currentUser) return;
+  box.textContent = "Chargement…";
+
+  const { data, error } = await supabaseClient
+    .from("tasks")
+    .select("*")
+    .order("done", { ascending: true })
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    reportDbError("chargement tâches", error);
+    box.textContent = "Erreur de chargement des tâches.";
+    return;
+  }
+  if (!data.length) {
+    box.textContent = "Aucune tâche pour l'instant.";
+    return;
+  }
+
+  const priorityIcon = { low: "🔵", normal: "🟡", high: "🔴" };
+  box.innerHTML = data
+    .map((row) => {
+      const due = row.due_date
+        ? new Date(row.due_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+        : "";
+      return `<div class="list-row task-row ${row.done ? "task-done" : ""}">
+        <label class="task-label">
+          <input type="checkbox" class="task-checkbox" data-id="${row.id}" ${row.done ? "checked" : ""}>
+          <span>${priorityIcon[row.priority] || ""} ${row.title}</span>
+          ${due ? `<span class="list-row-date">📅 ${due}</span>` : ""}
+        </label>
+        <button class="delete-btn" data-id="${row.id}" data-kind="tasks" title="Supprimer">🗑️</button>
+      </div>`;
+    })
+    .join("");
+
+  box.querySelectorAll(".task-checkbox").forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      await toggleTaskDone(cb.dataset.id, cb.checked);
+      loadTasks();
+    });
+  });
+
+  attachDeleteHandlers();
+}
+
 // ===================== Notes =====================
 const noteForm = document.getElementById("note-form");
 if (noteForm) {
@@ -257,6 +340,7 @@ function attachDeleteHandlers() {
       const { id, kind } = btn.dataset;
       await supabaseClient.from(kind).delete().eq("id", id);
       if (kind === "notes") loadNotes();
+      if (kind === "tasks") loadTasks();
       document.dispatchEvent(new CustomEvent("db-deleted", { detail: { kind, id } }));
     });
   });

@@ -47,6 +47,17 @@ create table if not exists profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Tâches (à cocher, distinctes des notes libres)
+create table if not exists tasks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  title text not null,
+  done boolean not null default false,
+  due_date date,
+  priority text not null default 'normal' check (priority in ('low', 'normal', 'high')),
+  created_at timestamptz not null default now()
+);
+
 -- ========================================================================
 -- Row Level Security : chaque utilisateur ne voit / modifie QUE ses données
 -- ========================================================================
@@ -54,6 +65,7 @@ alter table favorites enable row level security;
 alter table notes enable row level security;
 alter table events enable row level security;
 alter table profiles enable row level security;
+alter table tasks enable row level security;
 
 drop policy if exists "Users manage their own favorites" on favorites;
 create policy "Users manage their own favorites" on favorites
@@ -69,4 +81,8 @@ create policy "Users manage their own events" on events
 
 drop policy if exists "Users manage their own profile" on profiles;
 create policy "Users manage their own profile" on profiles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Users manage their own tasks" on tasks;
+create policy "Users manage their own tasks" on tasks
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -50,7 +50,10 @@ tabButtons.forEach((btn) => {
     if (btn.dataset.tab === "bourse") loadIndices();
     if (btn.dataset.tab === "transport") loadTransit();
     if (btn.dataset.tab === "calendrier") renderCalendar();
-    if (btn.dataset.tab === "notes" && typeof loadNotes === "function") loadNotes();
+    if (btn.dataset.tab === "notes") {
+      if (typeof loadNotes === "function") loadNotes();
+      if (typeof loadTasks === "function") loadTasks();
+    }
     if (btn.dataset.tab === "reglages") loadSettingsForm();
   });
 });
@@ -1213,3 +1216,147 @@ function onAuthChanged() {
 // L'onglet Accueil est actif par défaut au chargement : on affiche tout de suite
 // les actus (disponibles sans connexion) ; les autres cartes se complètent via onAuthChanged.
 renderDashboard();
+
+// ===================== Outils : convertisseur d'unités =====================
+const CONVERSION_UNITS = {
+  length: {
+    mm: "Millimètres (mm)", cm: "Centimètres (cm)", m: "Mètres (m)", km: "Kilomètres (km)",
+    in: "Pouces (in)", ft: "Pieds (ft)", mi: "Miles (mi)",
+  },
+  weight: {
+    g: "Grammes (g)", kg: "Kilogrammes (kg)", lb: "Livres (lb)", oz: "Onces (oz)",
+  },
+  volume: {
+    ml: "Millilitres (mL)", l: "Litres (L)", cup: "Tasse US (cup)",
+    tbsp: "Cuillère à soupe (tbsp)", tsp: "Cuillère à café (tsp)", floz: "Once liquide (fl oz)",
+  },
+  temperature: {
+    c: "Celsius (°C)", f: "Fahrenheit (°F)", k: "Kelvin (K)",
+  },
+};
+
+const CONVERSION_FACTORS = {
+  length: { mm: 0.001, cm: 0.01, m: 1, km: 1000, in: 0.0254, ft: 0.3048, mi: 1609.34 },
+  weight: { g: 1, kg: 1000, lb: 453.592, oz: 28.3495 },
+  volume: { ml: 1, l: 1000, cup: 236.588, tbsp: 14.7868, tsp: 4.92892, floz: 29.5735 },
+};
+
+function convertValue(category, fromUnit, toUnit, value) {
+  if (category === "temperature") {
+    let celsius = value;
+    if (fromUnit === "f") celsius = ((value - 32) * 5) / 9;
+    if (fromUnit === "k") celsius = value - 273.15;
+    if (toUnit === "f") return (celsius * 9) / 5 + 32;
+    if (toUnit === "k") return celsius + 273.15;
+    return celsius;
+  }
+  const factors = CONVERSION_FACTORS[category];
+  return (value * factors[fromUnit]) / factors[toUnit];
+}
+
+const convCategory = document.getElementById("conv-category");
+const convFromUnit = document.getElementById("conv-from-unit");
+const convToUnit = document.getElementById("conv-to-unit");
+const convInputValue = document.getElementById("conv-input-value");
+const convOutputValue = document.getElementById("conv-output-value");
+
+function populateConverterUnits() {
+  const units = CONVERSION_UNITS[convCategory.value];
+  const optionsHtml = Object.entries(units)
+    .map(([key, label]) => `<option value="${key}">${label}</option>`)
+    .join("");
+  convFromUnit.innerHTML = optionsHtml;
+  convToUnit.innerHTML = optionsHtml;
+  const keys = Object.keys(units);
+  convFromUnit.value = keys[0];
+  convToUnit.value = keys[1] || keys[0];
+  runConversion();
+}
+
+function runConversion() {
+  const value = parseFloat(convInputValue.value);
+  if (Number.isNaN(value)) {
+    convOutputValue.value = "";
+    return;
+  }
+  const result = convertValue(convCategory.value, convFromUnit.value, convToUnit.value, value);
+  convOutputValue.value = Math.round(result * 10000) / 10000;
+}
+
+if (convCategory) {
+  convCategory.addEventListener("change", populateConverterUnits);
+  convFromUnit.addEventListener("change", runConversion);
+  convToUnit.addEventListener("change", runConversion);
+  convInputValue.addEventListener("input", runConversion);
+  populateConverterUnits();
+}
+
+// ===================== Outils : minuteur =====================
+const timerDisplay = document.getElementById("timer-display");
+const timerMinutesInput = document.getElementById("timer-minutes");
+const timerSecondsInput = document.getElementById("timer-seconds");
+const timerStartBtn = document.getElementById("timer-start-btn");
+const timerPauseBtn = document.getElementById("timer-pause-btn");
+const timerResetBtn = document.getElementById("timer-reset-btn");
+
+let timerRemaining = 5 * 60;
+let timerIntervalId = null;
+
+function formatTimer(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function updateTimerDisplay() {
+  if (timerDisplay) timerDisplay.textContent = formatTimer(timerRemaining);
+}
+
+function startTimer() {
+  if (timerIntervalId) return;
+  if (timerRemaining <= 0) {
+    timerRemaining = (parseInt(timerMinutesInput.value, 10) || 0) * 60 + (parseInt(timerSecondsInput.value, 10) || 0);
+  }
+  if (timerRemaining <= 0) return;
+  timerDisplay.classList.remove("timer-done");
+  timerStartBtn.hidden = true;
+  timerPauseBtn.hidden = false;
+  timerIntervalId = setInterval(() => {
+    timerRemaining -= 1;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+      timerStartBtn.hidden = false;
+      timerPauseBtn.hidden = true;
+      timerDisplay.classList.add("timer-done");
+      showToast("⏱️ Temps écoulé !");
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timerIntervalId);
+  timerIntervalId = null;
+  timerStartBtn.hidden = false;
+  timerPauseBtn.hidden = true;
+}
+
+function resetTimer() {
+  clearInterval(timerIntervalId);
+  timerIntervalId = null;
+  timerRemaining = (parseInt(timerMinutesInput.value, 10) || 0) * 60 + (parseInt(timerSecondsInput.value, 10) || 0);
+  timerDisplay.classList.remove("timer-done");
+  timerStartBtn.hidden = false;
+  timerPauseBtn.hidden = true;
+  updateTimerDisplay();
+}
+
+if (timerStartBtn) {
+  timerStartBtn.addEventListener("click", startTimer);
+  timerPauseBtn.addEventListener("click", pauseTimer);
+  timerResetBtn.addEventListener("click", resetTimer);
+  timerMinutesInput.addEventListener("change", resetTimer);
+  timerSecondsInput.addEventListener("change", resetTimer);
+  updateTimerDisplay();
+}

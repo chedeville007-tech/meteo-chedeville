@@ -30,7 +30,8 @@
     <button class="tab-btn" data-tab="bourse">💹 Bourse</button>
     <button class="tab-btn" data-tab="transport">🚌 Transports</button>
     <button class="tab-btn" data-tab="calendrier">🗓️ Calendrier</button>
-    <button class="tab-btn" data-tab="notes">📝 Notes</button>
+    <button class="tab-btn" data-tab="notes">📝 Notes &amp; Tâches</button>
+    <button class="tab-btn" data-tab="outils">🛠️ Outils</button>
     <button class="tab-btn" data-tab="reglages">⚙️ Réglages</button>
   </nav>
 </header>
@@ -192,17 +193,85 @@
     </div>
   </section>
 
-  <!-- ===================== ONGLET NOTES ===================== -->
+  <!-- ===================== ONGLET NOTES & TÂCHES ===================== -->
   <section id="tab-notes" class="tab-panel">
-    <h2>📝 Mes notes</h2>
+    <h2>📝 Notes &amp; Tâches</h2>
     <div id="auth-required-notes" class="auth-required" hidden>
-      <p>🔒 Connecte-toi pour créer et voir tes notes.</p>
+      <p>🔒 Connecte-toi pour créer et voir tes notes et tâches.</p>
     </div>
-    <form id="note-form" class="search-bar" hidden>
-      <input type="text" id="note-content" placeholder="Écris une note…" required autocomplete="off">
-      <button type="submit">Ajouter</button>
-    </form>
-    <div id="notes-box" class="widget-box"></div>
+
+    <div class="sub-tabs">
+      <button type="button" class="sub-tab-btn active" data-subtab="notes-taches">✅ Tâches</button>
+      <button type="button" class="sub-tab-btn" data-subtab="notes-notes">📝 Notes</button>
+    </div>
+
+    <div id="subtab-notes-taches" class="sub-tab-panel active">
+      <form id="task-form" class="task-form" hidden>
+        <input type="text" id="task-title" placeholder="Nouvelle tâche…" required autocomplete="off">
+        <input type="date" id="task-due-date">
+        <select id="task-priority">
+          <option value="low">Priorité basse</option>
+          <option value="normal" selected>Priorité normale</option>
+          <option value="high">Priorité haute</option>
+        </select>
+        <button type="submit">Ajouter</button>
+      </form>
+      <div id="tasks-box" class="widget-box"></div>
+    </div>
+
+    <div id="subtab-notes-notes" class="sub-tab-panel">
+      <form id="note-form" class="search-bar" hidden>
+        <input type="text" id="note-content" placeholder="Écris une note…" required autocomplete="off">
+        <button type="submit">Ajouter</button>
+      </form>
+      <div id="notes-box" class="widget-box"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ONGLET OUTILS ===================== -->
+  <section id="tab-outils" class="tab-panel">
+    <h2>🛠️ Outils</h2>
+
+    <div class="sub-tabs">
+      <button type="button" class="sub-tab-btn active" data-subtab="outils-convertisseur">📐 Convertisseur</button>
+      <button type="button" class="sub-tab-btn" data-subtab="outils-minuteur">⏱️ Minuteur</button>
+    </div>
+
+    <div id="subtab-outils-convertisseur" class="sub-tab-panel active">
+      <div class="widget-box converter-box">
+        <div class="settings-row">
+          <span>Catégorie</span>
+          <select id="conv-category">
+            <option value="length">Longueur</option>
+            <option value="weight">Poids</option>
+            <option value="volume">Volume (cuisine)</option>
+            <option value="temperature">Température</option>
+          </select>
+        </div>
+        <div class="converter-row">
+          <input type="number" id="conv-input-value" value="1" step="any">
+          <select id="conv-from-unit"></select>
+          <span class="converter-equals">=</span>
+          <input type="text" id="conv-output-value" readonly>
+          <select id="conv-to-unit"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="subtab-outils-minuteur" class="sub-tab-panel">
+      <div class="widget-box timer-box">
+        <div class="timer-display" id="timer-display">05:00</div>
+        <div class="timer-inputs">
+          <label>Min <input type="number" id="timer-minutes" value="5" min="0" max="180"></label>
+          <label>Sec <input type="number" id="timer-seconds" value="0" min="0" max="59"></label>
+        </div>
+        <div class="timer-controls">
+          <button type="button" id="timer-start-btn">▶️ Démarrer</button>
+          <button type="button" id="timer-pause-btn" hidden>⏸️ Pause</button>
+          <button type="button" id="timer-reset-btn">🔄 Réinitialiser</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ===================== ONGLET RÉGLAGES ===================== -->

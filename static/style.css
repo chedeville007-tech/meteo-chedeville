@@ -1266,6 +1266,181 @@ textarea::placeholder {
   background: var(--blue-dark);
 }
 
+/* ===================== Tâches ===================== */
+.task-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.task-form input,
+.task-form select,
+.task-form button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+  background: var(--surface);
+}
+
+.task-form input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.task-form button {
+  background: var(--blue);
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-form button:hover {
+  background: var(--blue-dark);
+}
+
+.task-row .task-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.task-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--blue);
+}
+
+.task-row.task-done .task-label span:first-of-type {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* ===================== Outils : convertisseur ===================== */
+.converter-box .settings-row {
+  margin-bottom: 16px;
+  max-width: 280px;
+}
+
+.converter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.converter-row input,
+.converter-row select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.converter-row input[type="number"],
+.converter-row input[type="text"] {
+  width: 110px;
+  font-weight: 700;
+}
+
+.converter-row select {
+  flex: 1;
+  min-width: 160px;
+}
+
+.converter-equals {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ===================== Outils : minuteur ===================== */
+.timer-box {
+  text-align: center;
+}
+
+.timer-display {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  margin-bottom: 16px;
+  font-family: "Courier New", monospace;
+  transition: color 0.2s ease;
+}
+
+.timer-display.timer-done {
+  color: #c0392b;
+  animation: timer-pulse 1s ease infinite;
+}
+
+@keyframes timer-pulse {
+  50% { opacity: 0.4; }
+}
+
+.timer-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.timer-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.timer-inputs input {
+  width: 70px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.timer-controls button {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--blue);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.timer-controls button:hover {
+  background: var(--blue-dark);
+}
+
+#timer-reset-btn {
+  background: var(--blue-light);
+  color: var(--accent-text);
+}
+
+#timer-reset-btn:hover {
+  background: var(--border);
+}
+
 /* ===================== Compatibilité mobile ===================== */
 @media (max-width: 640px) {
   .app {
@@ -1386,5 +1561,14 @@ textarea::placeholder {
 
   .settings-form {
     max-width: none;
+  }
+
+  .timer-display {
+    font-size: 2.5rem;
+  }
+
+  .converter-row input[type="number"],
+  .converter-row input[type="text"] {
+    width: 90px;
   }
 }
