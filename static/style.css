@@ -742,11 +742,6 @@ textarea::placeholder {
   color: var(--accent-text);
 }
 
-@media (max-width: 560px) {
-  .hero h1 { font-size: 1.6rem; }
-  .modal { max-height: 90vh; }
-}
-
 /* ===================== Compte / Authentification ===================== */
 .account-bar {
   display: flex;
@@ -1193,11 +1188,6 @@ textarea::placeholder {
   background: var(--blue-dark);
 }
 
-@media (max-width: 560px) {
-  .calendar-grid { grid-auto-rows: 70px; }
-  .cal-event-pill { display: none; }
-}
-
 /* ===================== Tableau de bord (Accueil) ===================== */
 .dashboard-grid {
   display: grid;
@@ -1274,4 +1264,127 @@ textarea::placeholder {
 
 .settings-form > button:hover {
   background: var(--blue-dark);
+}
+
+/* ===================== Compatibilité mobile ===================== */
+@media (max-width: 640px) {
+  .app {
+    padding: 16px 12px 40px;
+  }
+
+  .hero {
+    padding: 20px 12px 20px;
+  }
+
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero .subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+
+  /* Onglets en défilement horizontal plutôt qu'empilés sur plusieurs lignes */
+  .tabs {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .account-bar {
+    margin-bottom: 12px;
+  }
+
+  .account-btn {
+    max-width: 150px;
+  }
+
+  .search-bar {
+    justify-content: stretch;
+  }
+
+  .search-bar input {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  #location-title {
+    font-size: 1.05rem;
+  }
+
+  .day-card .icon {
+    font-size: 2.1rem;
+  }
+
+  .day-card .temps {
+    font-size: 1.1rem;
+  }
+
+  /* Le sélecteur de calendrier déborde sinon (boutons + libellé + bouton "Aujourd'hui") */
+  .calendar-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cal-month-label {
+    min-width: 0;
+    flex: 1 1 auto;
+    font-size: 1.05rem;
+  }
+
+  .cal-today-btn {
+    margin-left: 0;
+  }
+
+  .calendar-grid {
+    grid-auto-rows: 64px;
+    gap: 4px;
+  }
+
+  .cal-day {
+    padding: 4px;
+  }
+
+  .cal-event-pill,
+  .cal-event-more {
+    display: none;
+  }
+
+  /* Le menu déroulant des arrêts déborde sinon sur petit écran */
+  .stop-select-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stop-select-wrap select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .auth-modal-box,
+  .day-modal-box {
+    padding: 22px 18px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-form {
+    max-width: none;
+  }
 }
