@@ -1,0 +1,184 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Météo personnalisée</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+  window.SUPABASE_URL = {{ supabase_url|tojson }};
+  window.SUPABASE_ANON_KEY = {{ supabase_anon_key|tojson }};
+</script>
+
+<header class="hero">
+  <div class="account-bar">
+    <button id="account-btn" class="account-btn">👤 Se connecter</button>
+  </div>
+
+  <h1>🌦️ Mon tableau de bord</h1>
+  <p class="subtitle">Météo personnalisée, qualité de l'air, actu, bourse et transports.</p>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="meteo">🌦️ Météo</button>
+    <button class="tab-btn" data-tab="actu">📰 Actu du monde</button>
+    <button class="tab-btn" data-tab="bourse">💹 Bourse</button>
+    <button class="tab-btn" data-tab="transport">🚌 Transports</button>
+    <button class="tab-btn" data-tab="historique">🕘 Historique</button>
+    <button class="tab-btn" data-tab="calendrier">🗓️ Calendrier</button>
+    <button class="tab-btn" data-tab="notes">📝 Notes</button>
+  </nav>
+</header>
+
+<main class="app">
+
+  <!-- ===================== ONGLET MÉTÉO ===================== -->
+  <section id="tab-meteo" class="tab-panel active">
+
+    <form id="search-form" class="search-bar">
+      <input type="text" id="city" name="city" placeholder="Nom de la ville (ex : Lyon)" required autocomplete="off">
+      <button type="button" id="geoloc-btn" title="Utiliser ma position">📍 Ma position</button>
+      <select id="activity" name="activity">
+        {% for key, label in activities.items() %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">
+        <span class="btn-text">Rechercher</span>
+        <span class="spinner" hidden></span>
+      </button>
+    </form>
+
+    <div id="favorites-bar" class="favorites-bar"></div>
+
+    <div id="status"></div>
+    <div id="location-title"></div>
+
+    <div id="sun-moon" class="sun-moon-bar" hidden></div>
+
+    <div id="forecast" class="forecast-grid"></div>
+
+    <div id="chart-section" class="chart-section" hidden>
+      <h2>Tendances sur 7 jours</h2>
+      <canvas id="trend-chart" height="90"></canvas>
+    </div>
+  </section>
+
+  <!-- ===================== ONGLET ACTU DU MONDE ===================== -->
+  <section id="tab-actu" class="tab-panel">
+    <h2>📰 Les 10 actus du monde</h2>
+    <p class="hint-text">Source : Le Monde — rubrique International.</p>
+    <div id="news-box" class="widget-box">Chargement…</div>
+  </section>
+
+  <!-- ===================== ONGLET BOURSE ===================== -->
+  <section id="tab-bourse" class="tab-panel">
+    <h2>💹 Bourse</h2>
+
+    <div class="indices-bar" id="indices-bar"></div>
+
+    <div class="stock-search">
+      <input type="text" id="stock-search-input" placeholder="Rechercher une entreprise cotée (ex : Airbus, Apple, LVMH)" autocomplete="off">
+      <div id="stock-search-results" class="stock-search-results" hidden></div>
+    </div>
+
+    <div id="stock-box" class="widget-box">Choisis un indice ci-dessus ou recherche une entreprise.</div>
+  </section>
+
+  <!-- ===================== ONGLET TRANSPORTS ===================== -->
+  <section id="tab-transport" class="tab-panel">
+    <h2>🚌 Transports en commun</h2>
+    <p class="hint-text">Gares et arrêts SNCF les plus proches d'une ville.</p>
+
+    <form id="transit-search-form" class="search-bar transit-search-bar">
+      <input type="text" id="transit-city" placeholder="Nom de la ville (ex : Lyon)" autocomplete="off">
+      <button type="submit">Rechercher</button>
+    </form>
+
+    <div id="transit-stop-select-wrap" class="stop-select-wrap" hidden>
+      <label for="transit-stop-select">Choisir un arrêt :</label>
+      <select id="transit-stop-select"></select>
+    </div>
+
+    <div id="transit-box" class="widget-box">Recherche une ville ci-dessus, ou dans l'onglet Météo.</div>
+  </section>
+  <!-- ===================== ONGLET HISTORIQUE ===================== -->
+  <section id="tab-historique" class="tab-panel">
+    <h2>🕘 Historique de mes recherches météo</h2>
+    <div id="auth-required-historique" class="auth-required" hidden>
+      <p>🔒 Connecte-toi pour voir et enregistrer ton historique.</p>
+    </div>
+    <div id="history-box" class="widget-box">Chargement…</div>
+  </section>
+
+  <!-- ===================== ONGLET CALENDRIER ===================== -->
+  <section id="tab-calendrier" class="tab-panel">
+    <h2>🗓️ Mon calendrier</h2>
+    <div id="auth-required-calendrier" class="auth-required" hidden>
+      <p>🔒 Connecte-toi pour créer et voir tes événements.</p>
+    </div>
+    <form id="event-form" class="search-bar" hidden>
+      <input type="text" id="event-title" placeholder="Titre de l'événement" required autocomplete="off">
+      <input type="date" id="event-date" required>
+      <input type="text" id="event-note" placeholder="Note (optionnel)" autocomplete="off">
+      <button type="submit">Ajouter</button>
+    </form>
+    <div id="events-box" class="widget-box"></div>
+  </section>
+
+  <!-- ===================== ONGLET NOTES ===================== -->
+  <section id="tab-notes" class="tab-panel">
+    <h2>📝 Mes notes</h2>
+    <div id="auth-required-notes" class="auth-required" hidden>
+      <p>🔒 Connecte-toi pour créer et voir tes notes.</p>
+    </div>
+    <form id="note-form" class="search-bar" hidden>
+      <input type="text" id="note-content" placeholder="Écris une note…" required autocomplete="off">
+      <button type="submit">Ajouter</button>
+    </form>
+    <div id="notes-box" class="widget-box"></div>
+  </section>
+
+</main>
+
+<div id="hourly-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <button id="modal-close" class="modal-close" aria-label="Fermer">✕</button>
+    <div id="modal-header"></div>
+    <div id="modal-body" class="hourly-scroller"></div>
+  </div>
+</div>
+
+<div id="auth-modal" class="modal-overlay" hidden>
+  <div class="modal auth-modal-box">
+    <button id="auth-modal-close" class="modal-close" aria-label="Fermer">✕</button>
+
+    <div id="auth-logged-out">
+      <h2 id="auth-title">Connexion</h2>
+
+      <button id="google-login-btn" type="button" class="google-btn">
+        <span>🔵</span> Continuer avec Google
+      </button>
+
+      <div class="auth-divider">ou</div>
+
+      <form id="auth-form" class="auth-form">
+        <input type="email" id="auth-email" placeholder="Adresse email" required autocomplete="email">
+        <input type="password" id="auth-password" placeholder="Mot de passe" required autocomplete="current-password" minlength="6">
+        <button type="submit" id="auth-submit-btn">Se connecter</button>
+      </form>
+
+      <p id="auth-error" class="auth-error"></p>
+      <p id="auth-switch">
+        Pas encore de compte ? <button type="button" id="auth-switch-btn" class="link-btn">Créer un compte</button>
+      </p>
+    </div>
+
+    <div id="auth-logged-in" hidden>
+      <h2>Mon compte</h2>
+      <p id="auth-user-email" class="auth-user-email"></p>
+      <button id="logout-btn" type="button">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='auth.js') }}"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
