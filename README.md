@@ -3,6 +3,9 @@
 Pool de pronostics sportifs multi-sports (foot, rugby, tennis, ping-pong, basket...)
 à jouer entre amis, en entreprise ou en groupe de fans.
 
+Authentification par compte (e-mail + mot de passe + pseudo unique, `/inscription` et `/connexion`) —
+un même compte est utilisé dans tous les groupes rejoints.
+
 Stack : **Python + Flask + PostgreSQL (Supabase) + Jinja2 + Tailwind CSS** (aucune dépendance Node.js).
 
 ## Installation
