@@ -4,7 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db, new_id
-from app.football_api import LEAGUES, FootballApiError, fetch_upcoming_fixtures
+from app.sports_api import IMPORTABLE_SPORTS, SportsApiError, fetch_upcoming_fixtures
 from app.scoring import compute_outcome, compute_prediction_points
 
 bp = Blueprint("matches", __name__, url_prefix="/groupes/<group_id>/matchs")
@@ -97,22 +97,35 @@ def import_matches(group_id):
     db = get_db()
     group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
     current_year = datetime.now(timezone.utc).year
+    template_args = {
+        "group": group,
+        "sport_options": [{"key": key, "label": s["label"]} for key, s in IMPORTABLE_SPORTS.items()],
+        "leagues_by_sport": {key: s["leagues"] for key, s in IMPORTABLE_SPORTS.items()},
+        "current_year": current_year,
+    }
 
     if request.method == "POST":
+        sport_key = request.form.get("sport_key", "")
+        sport_config = IMPORTABLE_SPORTS.get(sport_key)
+
         try:
             league_id = int(request.form.get("league_id", ""))
             season = int(request.form.get("season", current_year))
         except ValueError:
             flash("Compétition ou saison invalide.", "error")
-            return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
+            return render_template("group/match_import.html", **template_args)
+
+        if sport_config is None:
+            flash("Sport invalide.", "error")
+            return render_template("group/match_import.html", **template_args)
 
         try:
-            fixtures = fetch_upcoming_fixtures(league_id, season)
-        except FootballApiError as exc:
+            fixtures = fetch_upcoming_fixtures(sport_key, league_id, season)
+        except SportsApiError as exc:
             flash(str(exc), "error")
-            return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
+            return render_template("group/match_import.html", **template_args)
 
-        football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
+        db_sport = db.execute("SELECT id FROM sports WHERE key = ?", (sport_key,)).fetchone()
         imported = 0
         for fixture in fixtures:
             cur = db.execute(
@@ -124,7 +137,7 @@ def import_matches(group_id):
                 (
                     new_id(),
                     group_id,
-                    football_sport["id"],
+                    db_sport["id"],
                     fixture["home_name"],
                     fixture["away_name"],
                     fixture["start_time"],
@@ -141,7 +154,7 @@ def import_matches(group_id):
         flash(message, "success")
         return redirect(url_for("groups.upcoming", group_id=group_id))
 
-    return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
+    return render_template("group/match_import.html", **template_args)
 
 
 @bp.route("/<match_id>")
