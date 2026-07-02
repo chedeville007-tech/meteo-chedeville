@@ -65,18 +65,23 @@ def fetch_upcoming_matches(competition_id: str, days_ahead: int = 30, count: int
     if response.status_code != 200:
         raise FootballImportError(f"football-data.org a répondu avec une erreur ({response.status_code}).")
 
-    payload = response.json()
-    matches = []
-    for item in payload.get("matches", [])[:count]:
-        utc_date = item.get("utcDate")
-        if not utc_date:
-            continue
-        matches.append(
-            {
-                "external_id": f"football-data:{item.get('id')}",
-                "home_name": item.get("homeTeam", {}).get("name", "?"),
-                "away_name": item.get("awayTeam", {}).get("name", "?"),
-                "start_time": datetime.fromisoformat(utc_date.replace("Z", "+00:00")),
-            }
-        )
-    return matches
+    try:
+        payload = response.json()
+        matches = []
+        for item in payload.get("matches", [])[:count]:
+            utc_date = item.get("utcDate")
+            if not utc_date:
+                continue
+            matches.append(
+                {
+                    "external_id": f"football-data:{item.get('id')}",
+                    "home_name": item.get("homeTeam", {}).get("name", "?"),
+                    "away_name": item.get("awayTeam", {}).get("name", "?"),
+                    "start_time": datetime.fromisoformat(utc_date.replace("Z", "+00:00")),
+                }
+            )
+        return matches
+    except FootballImportError:
+        raise
+    except Exception as exc:
+        raise FootballImportError(f"Réponse inattendue de football-data.org : {exc!r}") from exc

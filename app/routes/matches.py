@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 
 from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db, new_id
@@ -106,31 +106,35 @@ def import_matches(group_id):
 
         try:
             matches = fetch_upcoming_matches(competition_id)
+
+            football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
+            imported = 0
+            for match in matches:
+                cur = db.execute(
+                    """
+                    INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time, external_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (external_id) DO NOTHING
+                    """,
+                    (
+                        new_id(),
+                        group_id,
+                        football_sport["id"],
+                        match["home_name"],
+                        match["away_name"],
+                        match["start_time"],
+                        match["external_id"],
+                    ),
+                )
+                imported += cur.rowcount
+            db.commit()
         except FootballImportError as exc:
             flash(str(exc), "error")
             return render_template("group/match_import.html", **template_args)
-
-        football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
-        imported = 0
-        for match in matches:
-            cur = db.execute(
-                """
-                INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time, external_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (external_id) DO NOTHING
-                """,
-                (
-                    new_id(),
-                    group_id,
-                    football_sport["id"],
-                    match["home_name"],
-                    match["away_name"],
-                    match["start_time"],
-                    match["external_id"],
-                ),
-            )
-            imported += cur.rowcount
-        db.commit()
+        except Exception as exc:  # filet de sécurité : jamais de 500 brut sur cette page
+            current_app.logger.exception("Echec import matchs football")
+            flash(f"Erreur inattendue pendant l'import : {exc!r}", "error")
+            return render_template("group/match_import.html", **template_args)
 
         skipped = len(matches) - imported
         message = f"{imported} match(s) importé(s)."
