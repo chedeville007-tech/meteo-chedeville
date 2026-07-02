@@ -1,0 +1,48 @@
+{% macro group_forms(prefill_code='', active='create') %}
+<div x-data="{ tab: '{{ active }}' }" class="rounded-2xl border border-border bg-surface/80 p-5 sm:p-6">
+  <div class="mb-5 flex gap-1 rounded-xl bg-ink-2 p-1">
+    <button type="button" @click="tab = 'create'"
+            :class="tab === 'create' ? 'bg-brand text-white' : 'text-muted hover:text-paper'"
+            class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition">
+      Créer un groupe
+    </button>
+    <button type="button" @click="tab = 'join'"
+            :class="tab === 'join' ? 'bg-brand text-white' : 'text-muted hover:text-paper'"
+            class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition">
+      Rejoindre un groupe
+    </button>
+  </div>
+
+  <form x-show="tab === 'create'" method="post" action="{{ url_for('home.create_group') }}" class="space-y-4">
+    <div class="space-y-1.5">
+      <label for="name" class="text-xs font-semibold uppercase tracking-wide text-muted">Nom du groupe</label>
+      <input id="name" name="name" maxlength="40" required placeholder="Ex : Les Pronostikeurs du Bureau"
+             class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+    </div>
+    <div class="space-y-1.5">
+      <label for="pseudo-create" class="text-xs font-semibold uppercase tracking-wide text-muted">Ton pseudo</label>
+      <input id="pseudo-create" name="pseudo" maxlength="24" required placeholder="Ex : Momo"
+             class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+    </div>
+    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+      Créer le groupe
+    </button>
+  </form>
+
+  <form x-show="tab === 'join'" method="post" action="{{ url_for('home.join_group') }}" class="space-y-4">
+    <div class="space-y-1.5">
+      <label for="code" class="text-xs font-semibold uppercase tracking-wide text-muted">Code d'invitation</label>
+      <input id="code" name="code" maxlength="12" required value="{{ prefill_code }}" placeholder="Ex : 7KX9QM"
+             class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 font-mono uppercase tracking-widest text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+    </div>
+    <div class="space-y-1.5">
+      <label for="pseudo-join" class="text-xs font-semibold uppercase tracking-wide text-muted">Ton pseudo</label>
+      <input id="pseudo-join" name="pseudo" maxlength="24" required placeholder="Ex : Momo"
+             class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+    </div>
+    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+      Rejoindre
+    </button>
+  </form>
+</div>
+{% endmacro %}

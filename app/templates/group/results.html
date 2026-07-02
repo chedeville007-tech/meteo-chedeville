@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import sport_badge, double_bonus_badge %}
+{% from 'partials/predictions_table.html' import predictions_table %}
+{% block title %}{{ group['name'] }} — Résultats{% endblock %}
+{% block content %}
+{% include 'group/_header.html' %}
+
+<h2 class="mb-6 font-display text-2xl tracking-wide text-muted">
+  {{ results | length }} résultat{{ 's' if results | length > 1 else '' }}
+</h2>
+
+{% if not results %}
+<div class="rounded-2xl border border-dashed border-border p-10 text-center text-muted">
+  Aucun match terminé pour l'instant.
+</div>
+{% else %}
+<div class="space-y-3">
+  {% for item in results %}
+  {% set match = item.match %}
+  <details class="group rounded-2xl border border-border bg-surface/70 open:bg-surface-2">
+    <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+      {{ sport_badge({'key': match['sport_key'], 'label': match['sport_label'], 'color': match['sport_color']}, 'sm') }}
+      <div class="flex items-center gap-3 font-display text-2xl sm:text-3xl">
+        <span>{{ match['home_name'] }}</span>
+        <span class="scoreboard-num rounded-lg bg-ink-2 px-3 py-1 text-2xl text-paper">{{ match['home_score'] }} — {{ match['away_score'] }}</span>
+        <span>{{ match['away_name'] }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if match['double_bonus'] %}{{ double_bonus_badge() }}{% endif %}
+        <span class="text-xs text-muted">{{ match['start_time'] | fr_datetime }}</span>
+        <span class="text-muted transition group-open:rotate-180">▾</span>
+      </div>
+    </summary>
+    <div class="border-t border-border px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+      {{ predictions_table(item.predictions, match['home_name'], match['away_name'], match['home_score'], match['away_score']) }}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

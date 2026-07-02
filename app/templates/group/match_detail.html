@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import sport_badge, status_badge, double_bonus_badge %}
+{% from 'partials/predictions_table.html' import predictions_table %}
+{% block title %}{{ match['home_name'] }} vs {{ match['away_name'] }} — {{ group['name'] }}{% endblock %}
+{% block content %}
+{% set sport = {'key': match['sport_key'], 'label': match['sport_label'], 'color': match['sport_color']} %}
+
+<div class="mx-auto max-w-2xl space-y-6">
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      {{ sport_badge(sport) }}
+      <div class="flex items-center gap-2">
+        {% if match['double_bonus'] %}{{ double_bonus_badge() }}{% endif %}
+        {{ status_badge(match['status']) }}
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-4 text-center sm:gap-8">
+      <span class="flex-1 truncate font-display text-3xl sm:text-4xl">{{ match['home_name'] }}</span>
+      {% if is_finished %}
+      <span class="scoreboard-num shrink-0 rounded-xl bg-ink-2 px-4 py-2 text-3xl sm:text-4xl">{{ match['home_score'] }} — {{ match['away_score'] }}</span>
+      {% else %}
+      <span class="shrink-0 text-sm text-muted-2">vs</span>
+      {% endif %}
+      <span class="flex-1 truncate font-display text-3xl sm:text-4xl">{{ match['away_name'] }}</span>
+    </div>
+
+    <p class="mt-4 text-center text-sm text-muted">{{ match['start_time'] | fr_datetime }}</p>
+  </div>
+
+  {% if member['is_admin'] and not is_finished %}
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur space-y-4 p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gold">Panneau admin</p>
+
+    <div class="flex flex-wrap items-center gap-3">
+      {% if match['status'] == 'UPCOMING' %}
+      <form method="post" action="{{ url_for('matches.start_match', group_id=group['id'], match_id=match['id']) }}">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
+          Démarrer le match
+        </button>
+      </form>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('matches.toggle_bonus', group_id=group['id'], match_id=match['id']) }}">
+        <button type="submit"
+                class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand text-white shadow-glow-brand hover:bg-brand-2' if match['double_bonus'] else 'bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan' }}">
+          {{ "Bonus x2 activé — désactiver" if match['double_bonus'] else "Activer le bonus x2 sur ce match" }}
+        </button>
+      </form>
+    </div>
+
+    <form method="post" action="{{ url_for('matches.finish_match', group_id=group['id'], match_id=match['id']) }}" class="space-y-3">
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Saisir le score final</p>
+      <div class="flex items-center gap-3">
+        <input type="number" name="home_score" min="0" placeholder="0" required
+               class="w-16 rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-center scoreboard-num text-lg text-paper outline-none focus:border-brand focus:ring-2 focus:ring-brand/25">
+        <span class="text-muted">—</span>
+        <input type="number" name="away_score" min="0" placeholder="0" required
+               class="w-16 rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-center scoreboard-num text-lg text-paper outline-none focus:border-brand focus:ring-2 focus:ring-brand/25">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
+          Terminer le match
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if is_finished %}
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <h3 class="mb-4 font-display text-xl tracking-wide text-muted">Pronostics de tous les membres</h3>
+    {{ predictions_table(predictions, match['home_name'], match['away_name'], match['home_score'], match['away_score']) }}
+  </div>
+  {% elif locked %}
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 text-center sm:p-6">
+    <p class="font-semibold text-brand">🔒 Pronostics verrouillés — le match a commencé</p>
+    {% if my_prediction %}
+    <p class="mt-2 text-sm text-muted">Ton pronostic reste secret jusqu'à la fin du match.</p>
+    {% else %}
+    <p class="mt-2 text-sm text-muted">Tu n'as pas pronostiqué ce match à temps.</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <h3 class="mb-4 font-display text-xl tracking-wide text-muted">Ton pronostic</h3>
+    <form method="post" action="{{ url_for('matches.predict', group_id=group['id'], match_id=match['id']) }}" class="space-y-5">
+      <div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">1. Le vainqueur</p>
+        <div class="grid gap-2 {{ 'grid-cols-3' if match['sport_allow_draw'] else 'grid-cols-2' }}">
+          <label class="cursor-pointer">
+            <input type="radio" name="predicted_outcome" value="HOME" class="peer sr-only" required
+                   {{ 'checked' if my_prediction and my_prediction['predicted_outcome'] == 'HOME' }}>
+            <div class="rounded-xl border border-border bg-ink-2 px-2 py-3 text-center text-sm font-semibold transition peer-checked:border-brand peer-checked:bg-brand/15 peer-checked:text-brand">
+              {{ match['home_name'] }}
+            </div>
+          </label>
+          {% if match['sport_allow_draw'] %}
+          <label class="cursor-pointer">
+            <input type="radio" name="predicted_outcome" value="DRAW" class="peer sr-only"
+                   {{ 'checked' if my_prediction and my_prediction['predicted_outcome'] == 'DRAW' }}>
+            <div class="rounded-xl border border-border bg-ink-2 px-2 py-3 text-center text-sm font-semibold transition peer-checked:border-cyan peer-checked:bg-cyan/15 peer-checked:text-cyan">
+              Nul
+            </div>
+          </label>
+          {% endif %}
+          <label class="cursor-pointer">
+            <input type="radio" name="predicted_outcome" value="AWAY" class="peer sr-only"
+                   {{ 'checked' if my_prediction and my_prediction['predicted_outcome'] == 'AWAY' }}>
+            <div class="rounded-xl border border-border bg-ink-2 px-2 py-3 text-center text-sm font-semibold transition peer-checked:border-brand peer-checked:bg-brand/15 peer-checked:text-brand">
+              {{ match['away_name'] }}
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          2. Score exact <span class="normal-case text-muted-2">(optionnel, bonus +50%)</span>
+        </p>
+        <div class="flex items-center justify-center gap-3">
+          <input type="number" name="predicted_home_score" min="0" placeholder="0"
+                 value="{{ my_prediction['predicted_home_score'] if my_prediction and my_prediction['predicted_home_score'] is not none else '' }}"
+                 class="w-20 rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-center scoreboard-num text-xl text-paper outline-none focus:border-brand focus:ring-2 focus:ring-brand/25">
+          <span class="text-muted">—</span>
+          <input type="number" name="predicted_away_score" min="0" placeholder="0"
+                 value="{{ my_prediction['predicted_away_score'] if my_prediction and my_prediction['predicted_away_score'] is not none else '' }}"
+                 class="w-20 rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-center scoreboard-num text-xl text-paper outline-none focus:border-brand focus:ring-2 focus:ring-brand/25">
+        </div>
+      </div>
+
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+        {{ "Mettre à jour mon pronostic" if my_prediction else "Valider mon pronostic" }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

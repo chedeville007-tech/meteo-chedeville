@@ -1,88 +1,102 @@
 -- ========================================================================
--- À exécuter dans Supabase : Dashboard -> SQL Editor -> New query -> Run
--- Ce script est ré-exécutable sans risque (idempotent) : tu peux le
--- relancer en entier après une mise à jour sans dupliquer quoi que ce soit.
+-- MultiProno — À exécuter dans Supabase : Dashboard -> SQL Editor -> New query -> Run
+-- Idempotent : rejouable sans risque après une mise à jour.
+--
+-- Important : cette app n'utilise PAS Supabase Auth (pas de compte via
+-- auth.users) — l'authentification se fait par pseudo + code de groupe,
+-- gérée côté serveur Flask. Le backend doit se connecter avec la clé
+-- service_role (ou la connection string Postgres directe), qui bypass RLS.
+-- Ne jamais utiliser la clé anon/public avec ces tables.
 -- ========================================================================
 
--- Si la table weather_history existait depuis une version précédente
--- (menu "Historique", maintenant supprimé), tu peux la supprimer avec :
--- drop table if exists weather_history;
+create extension if not exists pgcrypto;
 
--- Favoris : villes météo, actions/indices boursiers, arrêts de transport
-create table if not exists favorites (
+create table if not exists users (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  kind text not null check (kind in ('weather', 'stock', 'transit')),
-  label text not null,
-  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  code text not null unique,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists members (
+  id uuid primary key default gen_random_uuid(),
+  pseudo text not null,
+  is_admin boolean not null default false,
   created_at timestamptz not null default now(),
-  unique (user_id, kind, label)
+  user_id uuid not null references users(id) on delete cascade,
+  group_id uuid not null references groups(id) on delete cascade,
+  unique (group_id, pseudo),
+  unique (group_id, user_id)
 );
 
--- Notes libres
-create table if not exists notes (
+create table if not exists sports (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  content text not null,
+  key text not null unique,
+  label text not null,
+  allow_draw boolean not null default true,
+  color text not null,
+  sort_order integer not null default 0
+);
+
+create table if not exists matches (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  sport_id uuid not null references sports(id),
+  home_name text not null,
+  away_name text not null,
+  start_time timestamptz not null,
+  status text not null default 'UPCOMING' check (status in ('UPCOMING', 'LIVE', 'FINISHED')),
+  home_score integer,
+  away_score integer,
+  double_bonus boolean not null default false,
   created_at timestamptz not null default now()
 );
 
--- Événements de calendrier
-create table if not exists events (
+create table if not exists predictions (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  title text not null,
-  event_date date not null,
-  note text,
-  created_at timestamptz not null default now()
+  match_id uuid not null references matches(id) on delete cascade,
+  member_id uuid not null references members(id) on delete cascade,
+  predicted_outcome text not null check (predicted_outcome in ('HOME', 'AWAY', 'DRAW')),
+  predicted_home_score integer,
+  predicted_away_score integer,
+  points integer,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (match_id, member_id)
 );
 
--- Réglages de profil (une seule ligne par utilisateur)
-create table if not exists profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  default_city text,
-  default_activity text,
-  unit_temp text not null default 'celsius' check (unit_temp in ('celsius', 'fahrenheit')),
-  unit_wind text not null default 'kmh' check (unit_wind in ('kmh', 'mph')),
-  updated_at timestamptz not null default now()
-);
-
--- Tâches (à cocher, distinctes des notes libres)
-create table if not exists tasks (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  title text not null,
-  done boolean not null default false,
-  due_date date,
-  priority text not null default 'normal' check (priority in ('low', 'normal', 'high')),
-  created_at timestamptz not null default now()
-);
+create index if not exists idx_members_group on members(group_id);
+create index if not exists idx_matches_group on matches(group_id);
+create index if not exists idx_predictions_match on predictions(match_id);
+create index if not exists idx_predictions_member on predictions(member_id);
 
 -- ========================================================================
--- Row Level Security : chaque utilisateur ne voit / modifie QUE ses données
+-- Sports pré-remplis (idempotent : relancer met juste à jour les valeurs)
 -- ========================================================================
-alter table favorites enable row level security;
-alter table notes enable row level security;
-alter table events enable row level security;
-alter table profiles enable row level security;
-alter table tasks enable row level security;
+insert into sports (key, label, allow_draw, color, sort_order) values
+  ('FOOTBALL', 'Football', true, '#35d493', 1),
+  ('RUGBY', 'Rugby', false, '#e2703a', 2),
+  ('TENNIS', 'Tennis', false, '#d8db4a', 3),
+  ('PING_PONG', 'Ping-pong', false, '#4fa8ff', 4),
+  ('BASKETBALL', 'Basketball', false, '#ff9a3d', 5)
+on conflict (key) do update set
+  label = excluded.label,
+  allow_draw = excluded.allow_draw,
+  color = excluded.color,
+  sort_order = excluded.sort_order;
 
-drop policy if exists "Users manage their own favorites" on favorites;
-create policy "Users manage their own favorites" on favorites
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "Users manage their own notes" on notes;
-create policy "Users manage their own notes" on notes
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "Users manage their own events" on events;
-create policy "Users manage their own events" on events
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "Users manage their own profile" on profiles;
-create policy "Users manage their own profile" on profiles
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "Users manage their own tasks" on tasks;
-create policy "Users manage their own tasks" on tasks
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- ========================================================================
+-- Row Level Security : verrouillée par défaut (pas de policy = pas d'accès
+-- anon/authenticated). Seule la clé service_role peut lire/écrire.
+-- ========================================================================
+alter table users enable row level security;
+alter table groups enable row level security;
+alter table members enable row level security;
+alter table sports enable row level security;
+alter table matches enable row level security;
+alter table predictions enable row level security;

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from 'partials/match_card.html' import match_card %}
+{% block title %}{{ group['name'] }} — Matchs à venir{% endblock %}
+{% block content %}
+{% include 'group/_header.html' %}
+
+<div class="mb-6 flex items-center justify-between">
+  <h2 class="font-display text-2xl tracking-wide text-muted">
+    {{ matches | length }} match{{ 's' if matches | length > 1 else '' }} à venir
+  </h2>
+  {% if member['is_admin'] %}
+  <a href="{{ url_for('matches.new_match', group_id=group['id']) }}"
+     class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+    + Ajouter un match
+  </a>
+  {% endif %}
+</div>
+
+{% if not matches %}
+<div class="rounded-2xl border border-dashed border-border p-10 text-center text-muted">
+  Aucun match programmé pour l'instant.
+  {% if member['is_admin'] %}Ajoute le premier match du groupe !{% endif %}
+</div>
+{% else %}
+<div class="grid gap-4 sm:grid-cols-2">
+  {% for match in matches %}
+  {{ match_card(group['id'], match) }}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MultiProno{% endblock %}</title>
+  <meta name="description" content="Le pool de pronostics sportifs multi-sports entre amis.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="https://unpkg.com/alpinejs@3.14.9/dist/cdn.min.js"></script>
+</head>
+<body class="min-h-full flex flex-col antialiased">
+  <header class="sticky top-0 z-20 border-b border-border/60 bg-ink/85 backdrop-blur">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+      <a href="{{ url_for('home.index') }}" class="flex items-center gap-2">
+        <span class="font-display text-3xl tracking-wide">Multi<span class="text-brand">Prono</span></span>
+      </a>
+    </div>
+  </header>
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+    {% from 'partials/macros.html' import flashed_messages %}
+    {{ flashed_messages() }}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@source "../../templates";
+
+@theme {
+  /* Nuit de stade : indigo profond, néons magenta/cyan, or podium */
+  --color-ink: #0b0a1e;
+  --color-ink-2: #131029;
+  --color-surface: #1a1638;
+  --color-surface-2: #221c47;
+  --color-border: #34295f;
+
+  --color-paper: #f6f4ff;
+  --color-muted: #a79fd1;
+  --color-muted-2: #7d75a8;
+
+  --color-brand: #ff2f7e;
+  --color-brand-2: #ff6fa8;
+  --color-cyan: #17e6c8;
+  --color-cyan-2: #7bf2de;
+  --color-gold: #ffb62b;
+  --color-gold-2: #ffd989;
+
+  --shadow-glow-brand: 0 0 0 1px rgba(255, 47, 126, 0.25), 0 8px 30px -8px rgba(255, 47, 126, 0.45);
+  --shadow-glow-cyan: 0 0 0 1px rgba(23, 230, 200, 0.25), 0 8px 30px -8px rgba(23, 230, 200, 0.4);
+
+  --font-display: "Teko", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1100px 560px at 12% -10%, rgba(255, 47, 126, 0.18), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, rgba(23, 230, 200, 0.14), transparent 55%),
+    var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-brand);
+  color: white;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+.scoreboard-num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}

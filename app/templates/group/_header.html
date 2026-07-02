@@ -1,0 +1,41 @@
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="font-display text-4xl tracking-wide sm:text-5xl">{{ group['name'] }}</h1>
+      {% if member['is_admin'] %}
+      <span class="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-gold">Admin</span>
+      {% endif %}
+    </div>
+    <p class="mt-1 text-sm text-muted">Connecté en tant que <span class="font-semibold text-paper">{{ member['pseudo'] }}</span></p>
+  </div>
+
+  <div x-data="{ copied: null }" class="flex flex-wrap items-center gap-2">
+    <button type="button"
+            @click="navigator.clipboard.writeText('{{ group['code'] }}'); copied = 'code'; setTimeout(() => copied = null, 1800)"
+            class="rounded-lg border border-border bg-ink-2 px-2.5 py-1 font-mono text-xs tracking-widest text-muted transition hover:border-cyan/50 hover:text-cyan">
+      <span x-show="copied !== 'code'">{{ group['code'] }}</span>
+      <span x-show="copied === 'code'" x-cloak>Copié !</span>
+    </button>
+    <button type="button"
+            @click="navigator.clipboard.writeText(window.location.origin + '{{ url_for('home.join_by_code', code=group['code']) }}'); copied = 'link'; setTimeout(() => copied = null, 1800)"
+            class="rounded-lg border border-border px-2.5 py-1 text-xs text-muted transition hover:border-brand/50 hover:text-brand">
+      <span x-show="copied !== 'link'">Copier le lien d'invitation</span>
+      <span x-show="copied === 'link'" x-cloak>Lien copié !</span>
+    </button>
+  </div>
+</div>
+
+<div class="mb-8 flex gap-1 overflow-x-auto rounded-xl bg-ink-2 p-1">
+  <a href="{{ url_for('groups.upcoming', group_id=group['id']) }}"
+     class="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if active_tab == 'upcoming' else 'text-muted hover:text-paper' }}">
+    Matchs à venir
+  </a>
+  <a href="{{ url_for('groups.results', group_id=group['id']) }}"
+     class="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if active_tab == 'results' else 'text-muted hover:text-paper' }}">
+    Résultats
+  </a>
+  <a href="{{ url_for('groups.standings', group_id=group['id']) }}"
+     class="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if active_tab == 'standings' else 'text-muted hover:text-paper' }}">
+    Classement
+  </a>
+</div>

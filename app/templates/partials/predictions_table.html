@@ -1,0 +1,42 @@
+{% macro outcome_label(outcome, home_name, away_name) %}
+{%- if outcome == 'HOME' -%}Victoire {{ home_name }}
+{%- elif outcome == 'AWAY' -%}Victoire {{ away_name }}
+{%- else -%}Match nul
+{%- endif -%}
+{% endmacro %}
+
+{% macro predictions_table(predictions, home_name, away_name, home_score, away_score) %}
+{% if not predictions %}
+<p class="text-sm text-muted">Personne n'a pronostiqué ce match.</p>
+{% else %}
+<div class="overflow-x-auto">
+  <table class="w-full min-w-[420px] text-left text-sm">
+    <thead>
+      <tr class="text-xs uppercase tracking-wide text-muted-2">
+        <th class="py-2 pr-3">Pronostiqueur</th>
+        <th class="py-2 pr-3">Pronostic</th>
+        <th class="py-2 pr-3">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for prediction in predictions %}
+      {% set exact = prediction['predicted_home_score'] == home_score and prediction['predicted_away_score'] == away_score and prediction['predicted_home_score'] is not none %}
+      <tr class="border-t border-border/60">
+        <td class="py-2 pr-3 font-semibold">{{ prediction['member_pseudo'] }}</td>
+        <td class="py-2 pr-3 text-muted">
+          {{ outcome_label(prediction['predicted_outcome'], home_name, away_name) }}
+          {% if prediction['predicted_home_score'] is not none %}
+          <span class="ml-2 scoreboard-num text-paper">({{ prediction['predicted_home_score'] }}-{{ prediction['predicted_away_score'] }})</span>
+          {% endif %}
+          {% if exact %}<span class="ml-2 text-cyan">score exact</span>{% endif %}
+        </td>
+        <td class="py-2 pr-3 font-display text-xl">
+          <span class="{{ 'text-gold' if (prediction['points'] or 0) > 0 else 'text-muted-2' }}">{{ prediction['points'] or 0 }} pts</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endmacro %}

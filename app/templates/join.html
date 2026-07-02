@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% from 'partials/group_forms.html' import group_forms %}
+{% block title %}Rejoindre un groupe — MultiProno{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  {% if group %}
+  <div class="mb-6 text-center">
+    <p class="text-sm uppercase tracking-wide text-muted">Tu es invité(e) à rejoindre</p>
+    <h1 class="mt-1 font-display text-4xl tracking-wide text-brand">{{ group['name'] }}</h1>
+    <p class="mt-2 text-sm text-muted">
+      {{ member_count }} pronostiqueur{{ 's' if member_count > 1 else '' }} déjà inscrit{{ 's' if member_count > 1 else '' }}
+    </p>
+  </div>
+  {{ group_forms(prefill_code=code, active='join') }}
+  {% else %}
+  <div class="rounded-2xl border border-border bg-surface/80 p-8 text-center">
+    <h1 class="font-display text-3xl tracking-wide">Code invalide</h1>
+    <p class="mt-2 text-muted">Aucun groupe ne correspond au code <span class="font-mono">{{ code }}</span>.</p>
+    <a href="{{ url_for('home.index') }}"
+       class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
+      Retour à l'accueil
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

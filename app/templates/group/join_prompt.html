@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% from 'partials/group_forms.html' import group_forms %}
+{% block title %}Rejoindre {{ group['name'] }} — MultiProno{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  <div class="mb-6 text-center">
+    <p class="text-sm uppercase tracking-wide text-muted">Rejoindre</p>
+    <h1 class="mt-1 font-display text-4xl tracking-wide text-brand">{{ group['name'] }}</h1>
+  </div>
+  {{ group_forms(prefill_code=group['code'], active='join') }}
+</div>
+{% endblock %}

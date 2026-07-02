@@ -1,0 +1,73 @@
+{% from 'partials/icons.html' import sport_icon %}
+
+{% macro sport_badge(sport, size='md') %}
+{% set box = 'h-6 w-6 p-1' if size == 'sm' else 'h-8 w-8 p-1.5' %}
+{% set label_size = 'text-base' if size == 'sm' else 'text-lg' %}
+<span class="inline-flex items-center gap-2">
+  <span class="inline-flex shrink-0 items-center justify-center rounded-lg {{ box }}"
+        style="background-color: color-mix(in srgb, {{ sport.color }} 22%, transparent); color: {{ sport.color }};">
+    {{ sport_icon(icon_name_for(sport.key), 'h-full w-full') }}
+  </span>
+  <span class="font-display leading-none tracking-wide {{ label_size }}" style="color: {{ sport.color }};">
+    {{ sport.label }}
+  </span>
+</span>
+{% endmacro %}
+
+{% macro status_badge(status) %}
+{% if status == 'UPCOMING' %}
+<span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide border-cyan/40 text-cyan bg-cyan/10">À venir</span>
+{% elif status == 'LIVE' %}
+<span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide border-brand/50 text-brand bg-brand/10">
+  <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-brand"></span>En cours
+</span>
+{% else %}
+<span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide border-gold/40 text-gold bg-gold/10">Terminé</span>
+{% endif %}
+{% endmacro %}
+
+{% macro double_bonus_badge() %}
+<span class="rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-gold">Bonus x2</span>
+{% endmacro %}
+
+{% macro button(label, variant='primary', type='submit', extra_class='') %}
+{% set variants = {
+  'primary': 'bg-brand text-white shadow-glow-brand hover:bg-brand-2',
+  'secondary': 'bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan',
+  'ghost': 'text-muted hover:text-paper hover:bg-surface',
+} %}
+<button type="{{ type }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] whitespace-nowrap {{ variants[variant] }} {{ extra_class }}">
+  {{ label }}
+</button>
+{% endmacro %}
+
+{% macro link_button(label, href, variant='primary', extra_class='') %}
+{% set variants = {
+  'primary': 'bg-brand text-white shadow-glow-brand hover:bg-brand-2',
+  'secondary': 'bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan',
+  'ghost': 'text-muted hover:text-paper hover:bg-surface',
+} %}
+<a href="{{ href }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] whitespace-nowrap {{ variants[variant] }} {{ extra_class }}">
+  {{ label }}
+</a>
+{% endmacro %}
+
+{% macro field_label(label, for_id) %}
+<label for="{{ for_id }}" class="text-xs font-semibold uppercase tracking-wide text-muted">{{ label }}</label>
+{% endmacro %}
+
+{% macro flashed_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="space-y-2 mb-4">
+    {% for category, message in messages %}
+      {% if category == 'error' %}
+      <p class="rounded-lg border border-[#ff5a5a]/30 bg-[#ff5a5a]/10 px-3 py-2 text-sm text-[#ff9a9a]">{{ message }}</p>
+      {% else %}
+      <p class="rounded-lg border border-cyan/30 bg-cyan/10 px-3 py-2 text-sm text-cyan">{{ message }}</p>
+      {% endif %}
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+{% endmacro %}

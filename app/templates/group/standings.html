@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ group['name'] }} — Classement{% endblock %}
+{% block content %}
+{% include 'group/_header.html' %}
+
+{% set slots = [
+  {'rank': 2, 'height': 'h-24', 'color': 'var(--color-cyan)'},
+  {'rank': 1, 'height': 'h-32', 'color': 'var(--color-gold)'},
+  {'rank': 3, 'height': 'h-16', 'color': 'var(--color-brand)'},
+] %}
+{% set order = [top3[1] if top3 | length > 1 else none, top3[0] if top3 | length > 0 else none, top3[2] if top3 | length > 2 else none] %}
+
+{% if top3 %}
+<div class="mb-10 rounded-2xl border border-border bg-surface/50 p-6 sm:p-10">
+  <div class="flex items-end justify-center gap-3 sm:gap-8">
+    {% for entry in order %}
+    {% set slot = slots[loop.index0] %}
+    {% if entry %}
+    <div class="flex w-24 flex-col items-center gap-2 sm:w-32">
+      <div class="flex h-10 w-10 items-center justify-center rounded-full font-display text-xl"
+           style="background-color: color-mix(in srgb, {{ slot.color }} 25%, transparent); color: {{ slot.color }}; border: 1px solid {{ slot.color }};">
+        {{ slot.rank }}
+      </div>
+      <p class="max-w-full truncate font-semibold text-paper">{{ entry.pseudo }}</p>
+      <p class="scoreboard-num text-2xl" style="color: {{ slot.color }};">{{ entry.total_points }} pts</p>
+      <div class="w-full rounded-t-xl {{ slot.height }}"
+           style="background: linear-gradient(180deg, color-mix(in srgb, {{ slot.color }} 55%, transparent), color-mix(in srgb, {{ slot.color }} 12%, transparent));"></div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not rows %}
+<div class="rounded-2xl border border-dashed border-border p-10 text-center text-muted">
+  Personne n'a encore pronostiqué dans ce groupe.
+</div>
+{% else %}
+<div class="overflow-x-auto rounded-2xl border border-border bg-surface/70">
+  <table class="w-full min-w-[520px] text-left text-sm">
+    <thead>
+      <tr class="text-xs uppercase tracking-wide text-muted-2">
+        <th class="px-4 py-3">Rang</th>
+        <th class="px-4 py-3">Pronostiqueur</th>
+        <th class="px-4 py-3">Points</th>
+        <th class="px-4 py-3">Bons vainqueurs</th>
+        <th class="px-4 py-3">Scores exacts</th>
+        <th class="px-4 py-3">Matchs joués</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      {% set is_me = row.member_id == member['id'] %}
+      <tr class="border-t border-border/60 {{ 'bg-brand/10' if is_me else '' }} {{ 'font-semibold' if loop.index0 < 3 else '' }}">
+        <td class="px-4 py-3 font-display text-xl">{{ loop.index }}</td>
+        <td class="px-4 py-3">
+          {{ row.pseudo }}
+          {% if is_me %}<span class="ml-2 text-xs font-normal text-brand">toi</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 scoreboard-num text-lg text-gold">{{ row.total_points }}</td>
+        <td class="px-4 py-3 text-muted">{{ row.correct_count }}</td>
+        <td class="px-4 py-3 text-muted">{{ row.exact_count }}</td>
+        <td class="px-4 py-3 text-muted">{{ row.finished_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

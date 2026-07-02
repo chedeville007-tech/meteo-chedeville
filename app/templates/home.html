@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% from 'partials/group_forms.html' import group_forms %}
+{% from 'partials/icons.html' import sport_icon %}
+{% block title %}MultiProno — le pool de pronos multi-sports{% endblock %}
+{% block content %}
+<section class="mb-12 text-center">
+  <span class="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold">
+    {{ sport_icon('TROPHY', 'h-4 w-4') }}
+    Le pool de pronos multi-sports
+  </span>
+  <h1 class="font-display text-5xl leading-none tracking-wide sm:text-7xl">
+    Pronostique. <span class="text-brand">Défie.</span> <span class="text-cyan">Grimpe au classement.</span>
+  </h1>
+  <p class="mx-auto mt-5 max-w-2xl text-muted">
+    Foot, rugby, tennis, ping-pong, basket... Crée un groupe entre amis ou avec tes collègues,
+    pronostique chaque match et vise le podium.
+  </p>
+</section>
+
+<div class="grid gap-8 sm:grid-cols-[1.1fr_0.9fr]">
+  <section>
+    <h2 class="mb-4 font-display text-2xl tracking-wide text-muted">Tes groupes</h2>
+    {% if not groups %}
+    <div class="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
+      Tu ne fais partie d'aucun groupe pour l'instant. Crée-en un ou rejoins-en un avec un code d'invitation.
+    </div>
+    {% else %}
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for group in groups %}
+      <a href="{{ url_for('groups.upcoming', group_id=group['id']) }}"
+         class="group block rounded-2xl border border-border bg-surface/70 p-5 transition hover:border-brand/50 hover:bg-surface-2">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="font-display text-2xl tracking-wide text-paper">{{ group['name'] }}</h3>
+          <span class="shrink-0 rounded-md border border-border px-2 py-0.5 font-mono text-xs text-muted">{{ group['code'] }}</span>
+        </div>
+        <div class="mt-3 flex gap-4 text-sm text-muted">
+          <span>{{ group['member_count'] }} pronostiqueur{{ 's' if group['member_count'] > 1 else '' }}</span>
+          <span>{{ group['upcoming_count'] }} match{{ 's' if group['upcoming_count'] > 1 else '' }} à venir</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2 class="mb-4 font-display text-2xl tracking-wide text-muted">Nouveau groupe</h2>
+    {{ group_forms() }}
+  </section>
+</div>
+{% endblock %}
