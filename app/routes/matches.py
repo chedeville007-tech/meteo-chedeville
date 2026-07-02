@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db, new_id
-from app.football_import import COMPETITIONS, FootballImportError, fetch_upcoming_matches
 from app.scoring import compute_outcome, compute_prediction_points
 
 bp = Blueprint("matches", __name__, url_prefix="/groupes/<group_id>/matchs")
@@ -85,65 +84,6 @@ def new_match(group_id):
         return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
 
     return render_template("group/match_new.html", group=group, sports=sports)
-
-
-@bp.route("/importer", methods=["GET", "POST"])
-@login_required
-def import_matches(group_id):
-    member = require_membership(group_id)
-    if not member["is_admin"]:
-        return redirect(url_for("groups.upcoming", group_id=group_id))
-
-    db = get_db()
-    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
-    template_args = {"group": group, "competitions": COMPETITIONS}
-
-    if request.method == "POST":
-        competition_id = request.form.get("competition_id", "")
-        if not competition_id:
-            flash("Choisis une compétition.", "error")
-            return render_template("group/match_import.html", **template_args)
-
-        try:
-            matches = fetch_upcoming_matches(competition_id)
-
-            football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
-            imported = 0
-            for match in matches:
-                cur = db.execute(
-                    """
-                    INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time, external_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT (external_id) DO NOTHING
-                    """,
-                    (
-                        new_id(),
-                        group_id,
-                        football_sport["id"],
-                        match["home_name"],
-                        match["away_name"],
-                        match["start_time"],
-                        match["external_id"],
-                    ),
-                )
-                imported += cur.rowcount
-            db.commit()
-        except FootballImportError as exc:
-            flash(str(exc), "error")
-            return render_template("group/match_import.html", **template_args)
-        except Exception as exc:  # filet de sécurité : jamais de 500 brut sur cette page
-            current_app.logger.exception("Echec import matchs football")
-            flash(f"Erreur inattendue pendant l'import : {exc!r}", "error")
-            return render_template("group/match_import.html", **template_args)
-
-        skipped = len(matches) - imported
-        message = f"{imported} match(s) importé(s)."
-        if skipped:
-            message += f" {skipped} déjà présent(s), ignoré(s)."
-        flash(message, "success")
-        return redirect(url_for("groups.upcoming", group_id=group_id))
-
-    return render_template("group/match_import.html", **template_args)
 
 
 @bp.route("/<match_id>")

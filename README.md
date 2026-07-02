@@ -67,36 +67,13 @@ RLS — ne jamais utiliser la clé `anon` avec ces tables.
 Dans le dashboard Render → Settings → Environment, ajoute :
 - `DATABASE_URL` : la connection string Supabase (Session pooler)
 - `SECRET_KEY` : une valeur aléatoire (généré automatiquement si déployé via `render.yaml` en Blueprint)
-- `FOOTBALL_DATA_API_KEY` (optionnel) : voir section import automatique ci-dessous
 
-## Import automatique des matchs de foot
-
-Un admin peut importer les prochains matchs (30 jours) d'une compétition en un clic depuis
-l'onglet "Matchs à venir", plutôt que de les saisir un par un.
-
-Utilise [football-data.org](https://www.football-data.org), dont le plan gratuit donne un vrai
-accès à la saison en cours (contrairement à api-football/api-sports.io, dont le plan gratuit ne
-donne accès qu'à des saisons archivées 2022-2024, inutilisable pour importer des matchs à venir).
-
-1. Crée un compte gratuit sur [football-data.org/client/register](https://www.football-data.org/client/register).
-2. Copie ton jeton API (visible sur ton profil après inscription).
-3. Ajoute-le en variable d'environnement `FOOTBALL_DATA_API_KEY` (`.env` en local, Render →
-   Environment en production).
-
-Sans cette clé, le bouton "Importer des matchs" affiche un message d'erreur clair mais n'empêche
-pas le reste de l'app de fonctionner (ajout manuel de match toujours disponible pour tous les sports).
-
-Compétitions couvertes par le plan gratuit : Coupe du Monde, Euro, Ligue des champions, et les
-principaux championnats nationaux (France, Angleterre, Espagne, Italie, Allemagne, Pays-Bas,
-Portugal, Brésil) + Championship anglaise. Limite : 10 requêtes/minute.
-
-Rugby, tennis, ping-pong et basket restent en saisie manuelle — aucune API gratuite fiable avec
-accès à la saison en cours n'a été trouvée pour ces sports.
+Tous les matchs (tous sports) sont ajoutés à la main par l'admin du groupe — pas d'import
+automatique (aucune API gratuite avec accès à la saison en cours n'a été jugée satisfaisante).
 
 ## Structure
 
 - `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, matches, predictions)
-- `app/football_import.py` — import de matchs de foot via football-data.org
 - `app/auth.py` — comptes email + mot de passe (werkzeug), sessions Flask ; un `User` peut appartenir à plusieurs `Group` via `Member`
 - `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé sur le match)
 - `app/routes/` — routes Flask (accueil, groupes, matchs, pronostics)

@@ -28,18 +28,15 @@ def index():
         (user["id"],),
     ).fetchall()
 
-    # Seuls les matchs importés automatiquement (external_id renseigné) comptent dans ce
-    # classement inter-groupes, pour empêcher un admin de gonfler son score avec des
-    # matchs inventés à la main.
+    # Classement inter-groupes : somme de tous les points marqués par tous les membres du groupe.
     top_groups = db.execute(
         """
         SELECT g.id, g.name,
           (SELECT COUNT(*) FROM members m2 WHERE m2.group_id = g.id) AS member_count,
-          COALESCE(SUM(CASE WHEN ma.external_id IS NOT NULL THEN p.points ELSE 0 END), 0) AS total_points
+          COALESCE(SUM(p.points), 0) AS total_points
         FROM groups g
         LEFT JOIN members m ON m.group_id = g.id
         LEFT JOIN predictions p ON p.member_id = m.id
-        LEFT JOIN matches ma ON ma.id = p.match_id
         GROUP BY g.id, g.name
         ORDER BY total_points DESC, member_count DESC
         LIMIT 10

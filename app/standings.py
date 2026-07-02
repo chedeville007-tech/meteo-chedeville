@@ -1,9 +1,6 @@
-def summarize_predictions(predictions: list[dict], official_only: bool = False) -> dict:
+def summarize_predictions(predictions: list[dict]) -> dict:
     """predictions: lignes avec points, predicted_home_score, predicted_away_score,
-    match_status, match_home_score, match_away_score, match_external_id.
-
-    official_only=True : ne compte que les matchs importés automatiquement
-    (external_id renseigné), pour un classement non manipulable par un admin."""
+    match_status, match_home_score, match_away_score."""
     total_points = 0
     correct_count = 0
     exact_count = 0
@@ -11,8 +8,6 @@ def summarize_predictions(predictions: list[dict], official_only: bool = False) 
 
     for p in predictions:
         if p["match_status"] != "FINISHED" or p["points"] is None:
-            continue
-        if official_only and not p.get("match_external_id"):
             continue
 
         finished_count += 1

@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, redirect, render_template, url_for
 
 from app.auth import get_membership, login_required
 from app.db import get_db
@@ -96,9 +96,6 @@ def standings(group_id):
     if member is None:
         return render_template("group/join_prompt.html", group=group)
 
-    mode = request.args.get("mode", "officiel")
-    official_only = mode != "etendu"
-
     db = get_db()
     members = db.execute("SELECT * FROM members WHERE group_id = ?", (group_id,)).fetchall()
 
@@ -107,15 +104,14 @@ def standings(group_id):
         predictions = db.execute(
             """
             SELECT p.points, p.predicted_home_score, p.predicted_away_score,
-                   ma.status AS match_status, ma.home_score AS match_home_score, ma.away_score AS match_away_score,
-                   ma.external_id AS match_external_id
+                   ma.status AS match_status, ma.home_score AS match_home_score, ma.away_score AS match_away_score
             FROM predictions p
             JOIN matches ma ON ma.id = p.match_id
             WHERE p.member_id = ?
             """,
             (m["id"],),
         ).fetchall()
-        summary = summarize_predictions([dict(p) for p in predictions], official_only=official_only)
+        summary = summarize_predictions([dict(p) for p in predictions])
         rows.append({"member_id": m["id"], "pseudo": m["pseudo"], **summary})
 
     rows.sort(
@@ -130,6 +126,5 @@ def standings(group_id):
         member=member,
         rows=rows,
         top3=top3,
-        mode=mode,
         active_tab="standings",
     )
