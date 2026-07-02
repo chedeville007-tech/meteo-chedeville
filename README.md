@@ -64,10 +64,29 @@ RLS — ne jamais utiliser la clé `anon` avec ces tables.
 Dans le dashboard Render → Settings → Environment, ajoute :
 - `DATABASE_URL` : la connection string Supabase (Session pooler)
 - `SECRET_KEY` : une valeur aléatoire (généré automatiquement si déployé via `render.yaml` en Blueprint)
+- `FOOTBALL_API_KEY` (optionnel) : voir section import automatique ci-dessous
+
+## Import automatique des matchs de foot (API-Football)
+
+Un admin peut importer les prochains matchs d'une compétition (Ligue 1, Premier League, Champions
+League...) en un clic depuis l'onglet "Matchs à venir", plutôt que de les saisir un par un.
+
+1. Crée un compte gratuit sur [RapidAPI](https://rapidapi.com/api-sports/api/api-football)
+   et abonne-toi au plan **Basic (gratuit, 100 requêtes/jour)** de l'API "API-FOOTBALL".
+2. Copie ta clé RapidAPI (`X-RapidAPI-Key`).
+3. Ajoute-la en variable d'environnement `FOOTBALL_API_KEY` (`.env` en local, Render → Environment
+   en production).
+
+Sans cette clé, le bouton "Importer des matchs" affiche un message d'erreur clair mais n'empêche
+pas le reste de l'app de fonctionner (ajout manuel de match toujours disponible pour tous les sports).
+
+Seul le football est couvert pour l'instant — rugby, tennis, ping-pong et basket restent en saisie
+manuelle (peu ou pas d'API gratuite fiable pour ces sports).
 
 ## Structure
 
 - `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, matches, predictions)
+- `app/football_api.py` — import de matchs de foot via API-Football
 - `app/auth.py` — identification par cookie d'appareil (pas d'OAuth), un `User` peut appartenir à plusieurs `Group` via `Member`
 - `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé sur le match)
 - `app/routes/` — routes Flask (accueil, groupes, matchs, pronostics)

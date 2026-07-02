@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Importer des matchs — {{ group['name'] }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl">
+  <h2 class="mb-2 font-display text-3xl tracking-wide">Importer des matchs de foot</h2>
+  <p class="mb-6 text-sm text-muted">
+    Récupère automatiquement les prochains matchs d'une compétition via
+    <a href="https://www.api-football.com" target="_blank" rel="noopener" class="text-cyan hover:underline">API-Football</a>.
+    Les matchs déjà importés ne sont jamais dupliqués.
+  </p>
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <form method="post" class="space-y-5">
+      <div class="space-y-1.5">
+        <label for="league_id" class="text-xs font-semibold uppercase tracking-wide text-muted">Compétition</label>
+        <select id="league_id" name="league_id" required
+                class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+          {% for league in leagues %}
+          <option value="{{ league.id }}">{{ league.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="season" class="text-xs font-semibold uppercase tracking-wide text-muted">Saison</label>
+        <input id="season" name="season" type="number" value="{{ current_year }}" required
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+        <p class="text-xs text-muted-2">Ex : 2026 pour la saison 2026-2027 (année de début de saison).</p>
+      </div>
+
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+        Importer les prochains matchs
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

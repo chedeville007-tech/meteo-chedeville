@@ -4,6 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from app.auth import get_membership, require_admin, require_membership
 from app.db import get_db, new_id
+from app.football_api import LEAGUES, FootballApiError, fetch_upcoming_fixtures
 from app.scoring import compute_outcome, compute_prediction_points
 
 bp = Blueprint("matches", __name__, url_prefix="/groupes/<group_id>/matchs")
@@ -83,6 +84,62 @@ def new_match(group_id):
         return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
 
     return render_template("group/match_new.html", group=group, sports=sports)
+
+
+@bp.route("/importer", methods=["GET", "POST"])
+def import_matches(group_id):
+    member = require_membership(group_id)
+    if not member["is_admin"]:
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    db = get_db()
+    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    current_year = datetime.now(timezone.utc).year
+
+    if request.method == "POST":
+        try:
+            league_id = int(request.form.get("league_id", ""))
+            season = int(request.form.get("season", current_year))
+        except ValueError:
+            flash("Compétition ou saison invalide.", "error")
+            return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
+
+        try:
+            fixtures = fetch_upcoming_fixtures(league_id, season)
+        except FootballApiError as exc:
+            flash(str(exc), "error")
+            return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
+
+        football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
+        imported = 0
+        for fixture in fixtures:
+            cur = db.execute(
+                """
+                INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time, external_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (external_id) DO NOTHING
+                """,
+                (
+                    new_id(),
+                    group_id,
+                    football_sport["id"],
+                    fixture["home_name"],
+                    fixture["away_name"],
+                    fixture["start_time"],
+                    fixture["external_id"],
+                ),
+            )
+            imported += cur.rowcount
+        db.commit()
+
+        skipped = len(fixtures) - imported
+        message = f"{imported} match(s) importé(s)."
+        if skipped:
+            message += f" {skipped} déjà présent(s), ignoré(s)."
+        flash(message, "success")
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    return render_template("group/match_import.html", group=group, leagues=LEAGUES, current_year=current_year)
 
 
 @bp.route("/<match_id>")

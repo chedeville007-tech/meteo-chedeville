@@ -54,8 +54,11 @@ create table if not exists matches (
   home_score integer,
   away_score integer,
   double_bonus boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- identifiant du fixture cote fournisseur (ex: API-Football), pour eviter les doublons a l'import
+  external_id text unique
 );
+alter table matches add column if not exists external_id text unique;
 
 create table if not exists predictions (
   id uuid primary key default gen_random_uuid(),
