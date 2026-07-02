@@ -74,8 +74,8 @@ Dans le dashboard Render → Settings → Environment, ajoute :
 Un admin peut importer les prochains matchs d'une compétition en un clic depuis l'onglet
 "Matchs à venir", plutôt que de les saisir un par un.
 
-1. Crée un compte gratuit directement sur [dashboard.api-sports.io](https://dashboard.api-sports.io)
-   (pas RapidAPI — l'inscription directe donne **une seule clé valable pour tous les sports**).
+1. Crée un compte gratuit directement sur [dashboard.api-football.com/register](https://dashboard.api-football.com/register)
+   (pas RapidAPI — l'inscription directe donne **une seule clé valable pour tous les sports** de la famille api-sports.io).
 2. Abonne-toi au plan gratuit des APIs Football, Rugby et/ou Basketball (100 requêtes/jour chacune).
 3. Copie ta clé API et ajoute-la en variable d'environnement `API_SPORTS_KEY` (`.env` en local,
    Render → Environment en production).
@@ -84,7 +84,7 @@ Sans cette clé, le bouton "Importer des matchs" affiche un message d'erreur cla
 pas le reste de l'app de fonctionner (ajout manuel de match toujours disponible pour tous les sports).
 
 Les IDs de compétitions rugby/basket dans `app/sports_api.py` sont indicatifs — vérifie-les dans
-Dashboard api-sports.io → section "Leagues" du sport concerné si l'import ne remonte rien.
+[dashboard.api-football.com](https://dashboard.api-football.com) → section "Leagues" du sport concerné si l'import ne remonte rien.
 
 Tennis et ping-pong ne sont couverts par aucune offre api-sports.io — saisie manuelle uniquement.
 

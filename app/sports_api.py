@@ -21,7 +21,7 @@ def _get_api_key() -> str:
     if not api_key:
         raise SportsApiError(
             f"{API_KEY_ENV} n'est pas configurée. Crée un compte gratuit sur "
-            "https://dashboard.api-sports.io, abonne-toi (gratuit) aux sports voulus, "
+            "https://dashboard.api-football.com/register, abonne-toi (gratuit) aux sports voulus, "
             "et ajoute la clé dans les variables d'environnement pour activer l'import automatique."
         )
     return api_key
