@@ -4,7 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db, new_id
-from app.sports_api import IMPORTABLE_SPORTS, SportsApiError, fetch_upcoming_fixtures
+from app.football_import import COMPETITIONS, FootballImportError, fetch_upcoming_matches
 from app.scoring import compute_outcome, compute_prediction_points
 
 bp = Blueprint("matches", __name__, url_prefix="/groupes/<group_id>/matchs")
@@ -96,38 +96,23 @@ def import_matches(group_id):
 
     db = get_db()
     group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
-    current_year = datetime.now(timezone.utc).year
-    template_args = {
-        "group": group,
-        "sport_options": [{"key": key, "label": s["label"]} for key, s in IMPORTABLE_SPORTS.items()],
-        "leagues_by_sport": {key: s["leagues"] for key, s in IMPORTABLE_SPORTS.items()},
-        "current_year": current_year,
-    }
+    template_args = {"group": group, "competitions": COMPETITIONS}
 
     if request.method == "POST":
-        sport_key = request.form.get("sport_key", "")
-        sport_config = IMPORTABLE_SPORTS.get(sport_key)
-
-        try:
-            league_id = int(request.form.get("league_id", ""))
-            season = int(request.form.get("season", current_year))
-        except ValueError:
-            flash("Compétition ou saison invalide.", "error")
-            return render_template("group/match_import.html", **template_args)
-
-        if sport_config is None:
-            flash("Sport invalide.", "error")
+        competition_id = request.form.get("competition_id", "")
+        if not competition_id:
+            flash("Choisis une compétition.", "error")
             return render_template("group/match_import.html", **template_args)
 
         try:
-            fixtures = fetch_upcoming_fixtures(sport_key, league_id, season)
-        except SportsApiError as exc:
+            matches = fetch_upcoming_matches(competition_id)
+        except FootballImportError as exc:
             flash(str(exc), "error")
             return render_template("group/match_import.html", **template_args)
 
-        db_sport = db.execute("SELECT id FROM sports WHERE key = ?", (sport_key,)).fetchone()
+        football_sport = db.execute("SELECT id FROM sports WHERE key = 'FOOTBALL'").fetchone()
         imported = 0
-        for fixture in fixtures:
+        for match in matches:
             cur = db.execute(
                 """
                 INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time, external_id)
@@ -137,17 +122,17 @@ def import_matches(group_id):
                 (
                     new_id(),
                     group_id,
-                    db_sport["id"],
-                    fixture["home_name"],
-                    fixture["away_name"],
-                    fixture["start_time"],
-                    fixture["external_id"],
+                    football_sport["id"],
+                    match["home_name"],
+                    match["away_name"],
+                    match["start_time"],
+                    match["external_id"],
                 ),
             )
             imported += cur.rowcount
         db.commit()
 
-        skipped = len(fixtures) - imported
+        skipped = len(matches) - imported
         message = f"{imported} match(s) importé(s)."
         if skipped:
             message += f" {skipped} déjà présent(s), ignoré(s)."

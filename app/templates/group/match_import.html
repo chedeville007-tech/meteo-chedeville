@@ -1,47 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}Importer des matchs — {{ group['name'] }}{% endblock %}
 {% block content %}
-<div class="mx-auto max-w-xl"
-     x-data='{ sport: "{{ sport_options[0].key if sport_options else "" }}", leaguesBySport: {{ leagues_by_sport | tojson }} }'>
-  <h2 class="mb-2 font-display text-3xl tracking-wide">Importer des matchs</h2>
+<div class="mx-auto max-w-xl">
+  <h2 class="mb-2 font-display text-3xl tracking-wide">Importer des matchs de foot</h2>
   <p class="mb-6 text-sm text-muted">
-    Récupère automatiquement les prochains matchs d'une compétition via
-    <a href="https://dashboard.api-football.com" target="_blank" rel="noopener" class="text-cyan hover:underline">api-football.com</a>
-    (foot, rugby, basket — une seule clé pour les trois). Les matchs déjà importés ne sont jamais dupliqués.
-    Tennis et ping-pong ne sont pas couverts, saisie manuelle uniquement.
+    Récupère automatiquement les prochains matchs (30 jours) d'une compétition via
+    <a href="https://www.football-data.org" target="_blank" rel="noopener" class="text-cyan hover:underline">football-data.org</a>.
+    Les matchs déjà importés ne sont jamais dupliqués. Rugby, tennis, ping-pong et basket
+    restent en saisie manuelle (pas d'API gratuite fiable trouvée pour ces sports).
   </p>
   <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
     <form method="post" class="space-y-5">
       <div class="space-y-1.5">
-        <label for="sport_key" class="text-xs font-semibold uppercase tracking-wide text-muted">Sport</label>
-        <select id="sport_key" name="sport_key" x-model="sport" required
+        <label for="competition_id" class="text-xs font-semibold uppercase tracking-wide text-muted">Compétition</label>
+        <select id="competition_id" name="competition_id" required
                 class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
-          {% for option in sport_options %}
-          <option value="{{ option.key }}">{{ option.label }}</option>
+          {% for competition in competitions %}
+          <option value="{{ competition.id }}">{{ competition.label }}</option>
           {% endfor %}
         </select>
-      </div>
-
-      <div class="space-y-1.5">
-        <label for="league_id" class="text-xs font-semibold uppercase tracking-wide text-muted">Compétition</label>
-        <select id="league_id" name="league_id" required
-                class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
-          <template x-for="league in leaguesBySport[sport]" :key="league.id">
-            <option :value="league.id" x-text="league.label"></option>
-          </template>
-        </select>
-        <p class="text-xs text-muted-2">
-          ID absent de la liste ou incorrect ? Vérifie-le sur
-          <a href="https://dashboard.api-football.com" target="_blank" rel="noopener" class="text-cyan hover:underline">dashboard.api-football.com</a>
-          (section Leagues du sport concerné, une fois connecté).
-        </p>
-      </div>
-
-      <div class="space-y-1.5">
-        <label for="season" class="text-xs font-semibold uppercase tracking-wide text-muted">Saison</label>
-        <input id="season" name="season" type="number" value="{{ current_year }}" required
-               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
-        <p class="text-xs text-muted-2">Ex : 2026 pour la saison 2026-2027 (année de début de saison).</p>
       </div>
 
       <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">

@@ -11,5 +11,5 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-      - key: API_SPORTS_KEY
+      - key: FOOTBALL_DATA_API_KEY
         sync: false

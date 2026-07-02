@@ -67,31 +67,36 @@ RLS — ne jamais utiliser la clé `anon` avec ces tables.
 Dans le dashboard Render → Settings → Environment, ajoute :
 - `DATABASE_URL` : la connection string Supabase (Session pooler)
 - `SECRET_KEY` : une valeur aléatoire (généré automatiquement si déployé via `render.yaml` en Blueprint)
-- `API_SPORTS_KEY` (optionnel) : voir section import automatique ci-dessous
+- `FOOTBALL_DATA_API_KEY` (optionnel) : voir section import automatique ci-dessous
 
-## Import automatique des matchs (foot / rugby / basket)
+## Import automatique des matchs de foot
 
-Un admin peut importer les prochains matchs d'une compétition en un clic depuis l'onglet
-"Matchs à venir", plutôt que de les saisir un par un.
+Un admin peut importer les prochains matchs (30 jours) d'une compétition en un clic depuis
+l'onglet "Matchs à venir", plutôt que de les saisir un par un.
 
-1. Crée un compte gratuit directement sur [dashboard.api-football.com/register](https://dashboard.api-football.com/register)
-   (pas RapidAPI — l'inscription directe donne **une seule clé valable pour tous les sports** de la famille api-sports.io).
-2. Abonne-toi au plan gratuit des APIs Football, Rugby et/ou Basketball (100 requêtes/jour chacune).
-3. Copie ta clé API et ajoute-la en variable d'environnement `API_SPORTS_KEY` (`.env` en local,
-   Render → Environment en production).
+Utilise [football-data.org](https://www.football-data.org), dont le plan gratuit donne un vrai
+accès à la saison en cours (contrairement à api-football/api-sports.io, dont le plan gratuit ne
+donne accès qu'à des saisons archivées 2022-2024, inutilisable pour importer des matchs à venir).
+
+1. Crée un compte gratuit sur [football-data.org/client/register](https://www.football-data.org/client/register).
+2. Copie ton jeton API (visible sur ton profil après inscription).
+3. Ajoute-le en variable d'environnement `FOOTBALL_DATA_API_KEY` (`.env` en local, Render →
+   Environment en production).
 
 Sans cette clé, le bouton "Importer des matchs" affiche un message d'erreur clair mais n'empêche
 pas le reste de l'app de fonctionner (ajout manuel de match toujours disponible pour tous les sports).
 
-Les IDs de compétitions rugby/basket dans `app/sports_api.py` sont indicatifs — vérifie-les dans
-[dashboard.api-football.com](https://dashboard.api-football.com) → section "Leagues" du sport concerné si l'import ne remonte rien.
+Compétitions couvertes par le plan gratuit : Coupe du Monde, Euro, Ligue des champions, et les
+principaux championnats nationaux (France, Angleterre, Espagne, Italie, Allemagne, Pays-Bas,
+Portugal, Brésil) + Championship anglaise. Limite : 10 requêtes/minute.
 
-Tennis et ping-pong ne sont couverts par aucune offre api-sports.io — saisie manuelle uniquement.
+Rugby, tennis, ping-pong et basket restent en saisie manuelle — aucune API gratuite fiable avec
+accès à la saison en cours n'a été trouvée pour ces sports.
 
 ## Structure
 
 - `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, matches, predictions)
-- `app/sports_api.py` — import de matchs (foot/rugby/basket) via api-sports.io
+- `app/football_import.py` — import de matchs de foot via football-data.org
 - `app/auth.py` — comptes email + mot de passe (werkzeug), sessions Flask ; un `User` peut appartenir à plusieurs `Group` via `Member`
 - `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé sur le match)
 - `app/routes/` — routes Flask (accueil, groupes, matchs, pronostics)

@@ -3,6 +3,26 @@
 {% block content %}
 {% include 'group/_header.html' %}
 
+<div class="mb-6 flex items-center justify-between gap-3">
+  <div class="flex gap-1 rounded-xl bg-ink-2 p-1">
+    <a href="{{ url_for('groups.standings', group_id=group['id'], mode='officiel') }}"
+       class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if mode != 'etendu' else 'text-muted hover:text-paper' }}">
+      Officiel
+    </a>
+    <a href="{{ url_for('groups.standings', group_id=group['id'], mode='etendu') }}"
+       class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if mode == 'etendu' else 'text-muted hover:text-paper' }}">
+      Étendu
+    </a>
+  </div>
+  <p class="text-xs text-muted-2 text-right">
+    {% if mode == 'etendu' %}
+    Tous les matchs (importés + ajoutés à la main).
+    {% else %}
+    Seuls les matchs importés automatiquement comptent.
+    {% endif %}
+  </p>
+</div>
+
 {% set slots = [
   {'rank': 2, 'height': 'h-24', 'color': 'var(--color-cyan)'},
   {'rank': 1, 'height': 'h-32', 'color': 'var(--color-gold)'},
