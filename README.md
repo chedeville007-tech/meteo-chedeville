@@ -3,13 +3,20 @@
 Pool de pronostics sportifs multi-sports (foot, rugby, tennis, ping-pong, basket...)
 à jouer entre amis, en entreprise ou en groupe de fans.
 
-Stack : **Python + Flask + SQLite + Jinja2 + Tailwind CSS** (aucune dépendance Node.js).
+Stack : **Python + Flask + PostgreSQL (Supabase) + Jinja2 + Tailwind CSS** (aucune dépendance Node.js).
 
 ## Installation
 
 ```powershell
 py -m pip install -r requirements.txt
+copy .env.example .env
 ```
+
+Édite `.env` et renseigne `DATABASE_URL` (Supabase → bouton **Connect** → onglet **Direct** →
+**Session pooler**) et un `SECRET_KEY` aléatoire.
+
+Si les tables n'existent pas encore côté Supabase, exécute d'abord `supabase_schema.sql`
+(Dashboard → SQL Editor → New query → Run).
 
 ## Lancer l'application
 
@@ -18,9 +25,6 @@ py run.py
 ```
 
 Puis ouvrir http://127.0.0.1:5000
-
-La base SQLite est créée automatiquement au premier lancement dans `instance/multiprono.sqlite3`,
-avec les 5 sports pré-remplis (Football, Rugby, Tennis, Ping-pong, Basketball).
 
 ## Modifier le design (Tailwind)
 
@@ -46,17 +50,24 @@ chmod +x tailwindcss-linux-x64
 Le binaire n'est pas versionné dans le repo (~100 Mo) ; `app/static/css/app.css` déjà compilé
 est bien commité et suffit pour faire tourner l'app sans rien recompiler.
 
-## Base de données en production (Supabase)
+## Base de données (Supabase / PostgreSQL)
 
-Par défaut l'app utilise SQLite (`instance/multiprono.sqlite3`), non persistant sur un hébergeur
-comme Render (disque éphémère). `supabase_schema.sql` contient le schéma équivalent en PostgreSQL
-à exécuter dans Supabase (Dashboard → SQL Editor) pour une persistance durable. Le code Flask
-(`app/db.py`) utilise encore SQLite pour l'instant — le brancher sur Postgres/Supabase est une
-étape à part (connexion via `psycopg2`/`SQLAlchemy` + clé `service_role`, pas la clé `anon`).
+L'app se connecte directement à Postgres via `psycopg2` (variable d'environnement `DATABASE_URL`,
+connexion "Session pooler" recommandée — compatible IPv4, contrairement à la connexion "Direct").
+`supabase_schema.sql` contient le schéma complet (tables + RLS verrouillée) à exécuter une fois
+dans Supabase. Pas de RLS `auth.uid()` : cette app n'utilise pas Supabase Auth (pseudo + code de
+groupe gérés côté serveur), donc `DATABASE_URL` doit utiliser l'utilisateur `postgres` qui bypass
+RLS — ne jamais utiliser la clé `anon` avec ces tables.
+
+### Déploiement sur Render
+
+Dans le dashboard Render → Settings → Environment, ajoute :
+- `DATABASE_URL` : la connection string Supabase (Session pooler)
+- `SECRET_KEY` : une valeur aléatoire (généré automatiquement si déployé via `render.yaml` en Blueprint)
 
 ## Structure
 
-- `app/db.py`, `app/schema.sql` — accès SQLite et schéma (users, groups, members, sports, matches, predictions)
+- `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, matches, predictions)
 - `app/auth.py` — identification par cookie d'appareil (pas d'OAuth), un `User` peut appartenir à plusieurs `Group` via `Member`
 - `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé sur le match)
 - `app/routes/` — routes Flask (accueil, groupes, matchs, pronostics)

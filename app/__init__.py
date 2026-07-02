@@ -1,18 +1,29 @@
 import os
 import secrets
 
+from dotenv import load_dotenv
 from flask import Flask, g, request
 
 from app import db as db_module
 from app.format import format_datetime_fr
 from app.sports import icon_name_for
 
+load_dotenv()
+
 
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url and not test_config:
+        raise RuntimeError(
+            "DATABASE_URL manquant. Copie .env.example vers .env et renseigne la "
+            "connection string PostgreSQL (Supabase -> Connect -> Direct -> Session pooler)."
+        )
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY", "dev-only-secret-change-me"),
-        DATABASE_PATH=os.path.join(app.instance_path, "multiprono.sqlite3"),
+        DATABASE_URL=database_url,
     )
 
     if test_config:
@@ -52,37 +63,4 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(groups.bp)
     app.register_blueprint(matches.bp)
 
-    with app.app_context():
-        if not os.path.exists(app.config["DATABASE_PATH"]):
-            db_module.init_db()
-            _seed_sports()
-
     return app
-
-
-def _seed_sports() -> None:
-    from app.db import get_db, new_id
-    from app.sports import SEED_SPORTS
-
-    db = get_db()
-    for sport in SEED_SPORTS:
-        db.execute(
-            """
-            INSERT INTO sports (id, key, label, allow_draw, color, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET
-                label = excluded.label,
-                allow_draw = excluded.allow_draw,
-                color = excluded.color,
-                sort_order = excluded.sort_order
-            """,
-            (
-                new_id(),
-                sport["key"],
-                sport["label"],
-                int(sport["allow_draw"]),
-                sport["color"],
-                sport["sort_order"],
-            ),
-        )
-    db.commit()

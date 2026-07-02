@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
@@ -28,7 +28,7 @@ def _recompute_match_points(match_id: str) -> None:
             bool(match["double_bonus"]),
         )
         db.execute(
-            "UPDATE predictions SET points = ?, updated_at = datetime('now') WHERE id = ?",
+            "UPDATE predictions SET points = ?, updated_at = now() WHERE id = ?",
             (points, prediction["id"]),
         )
     db.commit()
@@ -77,7 +77,7 @@ def new_match(group_id):
             INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (match_id, group_id, sport_id, home_name, away_name, start_time.isoformat()),
+            (match_id, group_id, sport_id, home_name, away_name, start_time),
         )
         db.commit()
         return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
@@ -103,8 +103,8 @@ def detail(group_id, match_id):
     if match is None:
         abort(404)
 
-    start_time = datetime.fromisoformat(match["start_time"])
-    locked = match["status"] != "UPCOMING" or datetime.now() >= start_time
+    start_time = match["start_time"]
+    locked = match["status"] != "UPCOMING" or datetime.now(timezone.utc) >= start_time
     is_finished = match["status"] == "FINISHED"
 
     my_prediction = db.execute(
@@ -156,8 +156,8 @@ def predict(group_id, match_id):
     if match is None:
         abort(404)
 
-    start_time = datetime.fromisoformat(match["start_time"])
-    locked = match["status"] != "UPCOMING" or datetime.now() >= start_time
+    start_time = match["start_time"]
+    locked = match["status"] != "UPCOMING" or datetime.now(timezone.utc) >= start_time
     detail_url = url_for("matches.detail", group_id=group_id, match_id=match_id)
 
     if locked:
@@ -197,7 +197,7 @@ def predict(group_id, match_id):
         db.execute(
             """
             UPDATE predictions
-            SET predicted_outcome = ?, predicted_home_score = ?, predicted_away_score = ?, updated_at = datetime('now')
+            SET predicted_outcome = ?, predicted_home_score = ?, predicted_away_score = ?, updated_at = now()
             WHERE id = ?
             """,
             (predicted_outcome, predicted_home_score, predicted_away_score, existing["id"]),
@@ -237,10 +237,10 @@ def toggle_bonus(group_id, match_id):
         abort(404)
 
     if match["double_bonus"]:
-        db.execute("UPDATE matches SET double_bonus = 0 WHERE id = ?", (match_id,))
+        db.execute("UPDATE matches SET double_bonus = ? WHERE id = ?", (False, match_id))
     else:
-        db.execute("UPDATE matches SET double_bonus = 0 WHERE group_id = ? AND double_bonus = 1", (group_id,))
-        db.execute("UPDATE matches SET double_bonus = 1 WHERE id = ?", (match_id,))
+        db.execute("UPDATE matches SET double_bonus = ? WHERE group_id = ? AND double_bonus = ?", (False, group_id, True))
+        db.execute("UPDATE matches SET double_bonus = ? WHERE id = ?", (True, match_id))
     db.commit()
 
     _recompute_match_points(match_id)

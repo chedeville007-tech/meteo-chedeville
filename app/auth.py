@@ -13,7 +13,7 @@ def get_device_id() -> str:
 def ensure_user() -> str:
     db = get_db()
     user_id = get_device_id()
-    db.execute("INSERT OR IGNORE INTO users (id) VALUES (?)", (user_id,))
+    db.execute("INSERT INTO users (id) VALUES (?) ON CONFLICT (id) DO NOTHING", (user_id,))
     db.commit()
     return user_id
 

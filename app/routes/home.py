@@ -59,8 +59,8 @@ def create_group():
     group_id = new_id()
     db.execute("INSERT INTO groups (id, name, code) VALUES (?, ?, ?)", (group_id, name, code))
     db.execute(
-        "INSERT INTO members (id, pseudo, is_admin, user_id, group_id) VALUES (?, ?, 1, ?, ?)",
-        (new_id(), pseudo, get_device_id(), group_id),
+        "INSERT INTO members (id, pseudo, is_admin, user_id, group_id) VALUES (?, ?, ?, ?, ?)",
+        (new_id(), pseudo, True, get_device_id(), group_id),
     )
     db.commit()
 
@@ -105,8 +105,8 @@ def join_group():
         return redirect(url_for("home.join_by_code", code=code))
 
     db.execute(
-        "INSERT INTO members (id, pseudo, is_admin, user_id, group_id) VALUES (?, ?, 0, ?, ?)",
-        (new_id(), pseudo, uid, group["id"]),
+        "INSERT INTO members (id, pseudo, is_admin, user_id, group_id) VALUES (?, ?, ?, ?, ?)",
+        (new_id(), pseudo, False, uid, group["id"]),
     )
     db.commit()
 
