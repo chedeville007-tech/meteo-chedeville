@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, redirect, render_template, url_for
 
-from app.auth import get_membership
+from app.auth import get_membership, login_required
 from app.db import get_db
 from app.standings import summarize_predictions
 
@@ -17,11 +17,13 @@ def group_gate(group_id: str):
 
 
 @bp.route("/")
+@login_required
 def index(group_id):
     return redirect(url_for("groups.upcoming", group_id=group_id))
 
 
 @bp.route("/matchs-a-venir")
+@login_required
 def upcoming(group_id):
     group, member = group_gate(group_id)
     if member is None:
@@ -46,6 +48,7 @@ def upcoming(group_id):
 
 
 @bp.route("/resultats")
+@login_required
 def results(group_id):
     group, member = group_gate(group_id)
     if member is None:
@@ -87,6 +90,7 @@ def results(group_id):
 
 
 @bp.route("/classement")
+@login_required
 def standings(group_id):
     group, member = group_gate(group_id)
     if member is None:

@@ -48,4 +48,32 @@
     {{ group_forms() }}
   </section>
 </div>
+
+{% if top_groups %}
+<section class="mt-12">
+  <h2 class="mb-4 font-display text-2xl tracking-wide text-muted">Classement des groupes</h2>
+  <div class="overflow-x-auto rounded-2xl border border-border bg-surface/70">
+    <table class="w-full min-w-[420px] text-left text-sm">
+      <thead>
+        <tr class="text-xs uppercase tracking-wide text-muted-2">
+          <th class="px-4 py-3">Rang</th>
+          <th class="px-4 py-3">Groupe</th>
+          <th class="px-4 py-3">Pronostiqueurs</th>
+          <th class="px-4 py-3">Points cumulés</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tg in top_groups %}
+        <tr class="border-t border-border/60 {{ 'font-semibold' if loop.index0 < 3 else '' }}">
+          <td class="px-4 py-3 font-display text-xl">{{ loop.index }}</td>
+          <td class="px-4 py-3">{{ tg['name'] }}</td>
+          <td class="px-4 py-3 text-muted">{{ tg['member_count'] }}</td>
+          <td class="px-4 py-3 scoreboard-num text-lg text-gold">{{ tg['total_points'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

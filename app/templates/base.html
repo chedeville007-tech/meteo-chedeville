@@ -17,14 +17,29 @@
       <a href="{{ url_for('home.index') }}" class="flex items-center gap-2 transition hover:opacity-80">
         <span class="font-display text-3xl tracking-wide">Multi<span class="text-brand">Prono</span></span>
       </a>
-      <a href="{{ url_for('home.index') }}"
-         class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
-        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
-          <path d="M4 11.5 12 4l8 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        Accueil
-      </a>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('home.index') }}"
+           class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
+            <path d="M4 11.5 12 4l8 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Accueil
+        </a>
+        {% set user = current_user() %}
+        {% if user %}
+        <span class="hidden text-sm text-muted sm:inline">{{ user['pseudo'] }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <button type="submit" class="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
+            Déconnexion
+          </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
+          Connexion
+        </a>
+        {% endif %}
+      </div>
     </div>
   </header>
   <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">

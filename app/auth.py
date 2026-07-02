@@ -1,28 +1,50 @@
-from flask import abort, g
+from functools import wraps
+
+from flask import abort, g, redirect, request, session, url_for
 
 from app.db import get_db
 
-UID_COOKIE = "mp_uid"
-ONE_YEAR = 60 * 60 * 24 * 365
+MAX_PSEUDO_LENGTH = 24
 
 
-def get_device_id() -> str:
-    return g.uid
+def current_user():
+    if "user" not in g:
+        user_id = session.get("user_id")
+        g.user = None
+        if user_id:
+            db = get_db()
+            g.user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return g.user
 
 
-def ensure_user() -> str:
-    db = get_db()
-    user_id = get_device_id()
-    db.execute("INSERT INTO users (id) VALUES (?) ON CONFLICT (id) DO NOTHING", (user_id,))
-    db.commit()
-    return user_id
+def login_user(user_id: str) -> None:
+    session.clear()
+    session["user_id"] = user_id
+    session.permanent = True
+
+
+def logout_user() -> None:
+    session.clear()
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if current_user() is None:
+            return redirect(url_for("auth.login", next=request.path))
+        return view(*args, **kwargs)
+
+    return wrapped
 
 
 def get_membership(group_id: str):
+    user = current_user()
+    if user is None:
+        return None
     db = get_db()
     return db.execute(
         "SELECT * FROM members WHERE group_id = ? AND user_id = ?",
-        (group_id, get_device_id()),
+        (group_id, user["id"]),
     ).fetchone()
 
 

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Créer un compte — MultiProno{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  <h1 class="mb-6 text-center font-display text-4xl tracking-wide">Créer un compte</h1>
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <form method="post" class="space-y-4">
+      <div class="space-y-1.5">
+        <label for="email" class="text-xs font-semibold uppercase tracking-wide text-muted">E-mail</label>
+        <input id="email" name="email" type="email" required value="{{ email or '' }}"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <div class="space-y-1.5">
+        <label for="pseudo" class="text-xs font-semibold uppercase tracking-wide text-muted">Pseudo</label>
+        <input id="pseudo" name="pseudo" maxlength="24" required value="{{ pseudo or '' }}" placeholder="Ex : Momo"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+        <p class="text-xs text-muted-2">Utilisé dans tous tes groupes.</p>
+      </div>
+      <div class="space-y-1.5">
+        <label for="password" class="text-xs font-semibold uppercase tracking-wide text-muted">Mot de passe</label>
+        <input id="password" name="password" type="password" required minlength="8"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <div class="space-y-1.5">
+        <label for="password_confirm" class="text-xs font-semibold uppercase tracking-wide text-muted">Confirme le mot de passe</label>
+        <input id="password_confirm" name="password_confirm" type="password" required minlength="8"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+        Créer mon compte
+      </button>
+    </form>
+  </div>
+  <p class="mt-4 text-center text-sm text-muted">
+    Déjà un compte ?
+    <a href="{{ url_for('auth.login') }}" class="font-semibold text-cyan hover:underline">Se connecter</a>
+  </p>
+</div>
+{% endblock %}

@@ -3,18 +3,24 @@
 -- Idempotent : rejouable sans risque après une mise à jour.
 --
 -- Important : cette app n'utilise PAS Supabase Auth (pas de compte via
--- auth.users) — l'authentification se fait par pseudo + code de groupe,
--- gérée côté serveur Flask. Le backend doit se connecter avec la clé
--- service_role (ou la connection string Postgres directe), qui bypass RLS.
--- Ne jamais utiliser la clé anon/public avec ces tables.
+-- auth.users) — comptes email + mot de passe geres a la main cote serveur
+-- Flask (werkzeug password hashing). Le backend doit se connecter avec la
+-- cle service_role (ou la connection string Postgres directe), qui bypass
+-- RLS. Ne jamais utiliser la cle anon/public avec ces tables.
 -- ========================================================================
 
 create extension if not exists pgcrypto;
 
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
+  email text unique,
+  password_hash text,
+  pseudo text,
   created_at timestamptz not null default now()
 );
+alter table users add column if not exists email text unique;
+alter table users add column if not exists password_hash text;
+alter table users add column if not exists pseudo text;
 
 create table if not exists groups (
   id uuid primary key default gen_random_uuid(),

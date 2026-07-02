@@ -1,10 +1,11 @@
 import os
-import secrets
+from datetime import timedelta
 
 from dotenv import load_dotenv
-from flask import Flask, g, request
+from flask import Flask
 
 from app import db as db_module
+from app.auth import current_user
 from app.format import format_datetime_fr
 from app.sports import icon_name_for
 
@@ -24,6 +25,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY", "dev-only-secret-change-me"),
         DATABASE_URL=database_url,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),
     )
 
     if test_config:
@@ -35,30 +37,11 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     app.jinja_env.filters["fr_datetime"] = format_datetime_fr
     app.jinja_env.globals["icon_name_for"] = icon_name_for
+    app.jinja_env.globals["current_user"] = current_user
 
-    @app.before_request
-    def ensure_device_cookie():
-        g.uid = request.cookies.get("mp_uid")
-        if not g.uid:
-            g.uid = secrets.token_hex(16)
-            g.uid_is_new = True
-        else:
-            g.uid_is_new = False
+    from app.routes import auth, home, groups, matches
 
-    @app.after_request
-    def persist_device_cookie(response):
-        if getattr(g, "uid_is_new", False):
-            response.set_cookie(
-                "mp_uid",
-                g.uid,
-                max_age=60 * 60 * 24 * 365,
-                httponly=True,
-                samesite="Lax",
-            )
-        return response
-
-    from app.routes import home, groups, matches
-
+    app.register_blueprint(auth.bp)
     app.register_blueprint(home.bp)
     app.register_blueprint(groups.bp)
     app.register_blueprint(matches.bp)

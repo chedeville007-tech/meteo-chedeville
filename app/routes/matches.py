@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from app.auth import get_membership, require_admin, require_membership
+from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db, new_id
 from app.football_api import LEAGUES, FootballApiError, fetch_upcoming_fixtures
 from app.scoring import compute_outcome, compute_prediction_points
@@ -36,6 +36,7 @@ def _recompute_match_points(match_id: str) -> None:
 
 
 @bp.route("/nouveau", methods=["GET", "POST"])
+@login_required
 def new_match(group_id):
     member = require_membership(group_id)
     if not member["is_admin"]:
@@ -87,6 +88,7 @@ def new_match(group_id):
 
 
 @bp.route("/importer", methods=["GET", "POST"])
+@login_required
 def import_matches(group_id):
     member = require_membership(group_id)
     if not member["is_admin"]:
@@ -143,6 +145,7 @@ def import_matches(group_id):
 
 
 @bp.route("/<match_id>")
+@login_required
 def detail(group_id, match_id):
     member = require_membership(group_id)
     db = get_db()
@@ -195,6 +198,7 @@ def detail(group_id, match_id):
 
 
 @bp.route("/<match_id>/pronostiquer", methods=["POST"])
+@login_required
 def predict(group_id, match_id):
     member = get_membership(group_id)
     if member is None:
@@ -274,6 +278,7 @@ def predict(group_id, match_id):
 
 
 @bp.route("/<match_id>/demarrer", methods=["POST"])
+@login_required
 def start_match(group_id, match_id):
     member = require_admin(group_id)
     db = get_db()
@@ -286,6 +291,7 @@ def start_match(group_id, match_id):
 
 
 @bp.route("/<match_id>/bonus", methods=["POST"])
+@login_required
 def toggle_bonus(group_id, match_id):
     require_admin(group_id)
     db = get_db()
@@ -305,6 +311,7 @@ def toggle_bonus(group_id, match_id):
 
 
 @bp.route("/<match_id>/terminer", methods=["POST"])
+@login_required
 def finish_match(group_id, match_id):
     require_admin(group_id)
     db = get_db()
