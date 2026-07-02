@@ -3,6 +3,7 @@
 {% from 'partials/predictions_table.html' import predictions_table %}
 {% block title %}{{ match['home_name'] }} vs {{ match['away_name'] }} — {{ group['name'] }}{% endblock %}
 {% block content %}
+{% include 'group/_header.html' %}
 {% set sport = {'key': match['sport_key'], 'label': match['sport_label'], 'color': match['sport_color']} %}
 
 <div class="mx-auto max-w-2xl space-y-6">

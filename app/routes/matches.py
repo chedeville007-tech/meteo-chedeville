@@ -70,7 +70,7 @@ def new_match(group_id):
 
         if error:
             flash(error, "error")
-            return render_template("group/match_new.html", group=group, sports=sports)
+            return render_template("group/match_new.html", group=group, member=member, sports=sports, active_tab="upcoming")
 
         match_id = new_id()
         db.execute(
@@ -83,7 +83,7 @@ def new_match(group_id):
         db.commit()
         return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
 
-    return render_template("group/match_new.html", group=group, sports=sports)
+    return render_template("group/match_new.html", group=group, member=member, sports=sports, active_tab="upcoming")
 
 
 @bp.route("/<match_id>")
@@ -136,6 +136,7 @@ def detail(group_id, match_id):
         is_finished=is_finished,
         my_prediction=my_prediction,
         predictions=predictions,
+        active_tab="results" if is_finished else "upcoming",
     )
 
 

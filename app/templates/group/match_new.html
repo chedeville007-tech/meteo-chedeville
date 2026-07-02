@@ -2,6 +2,7 @@
 {% from 'partials/sport_picker.html' import sport_picker %}
 {% block title %}Ajouter un match — {{ group['name'] }}{% endblock %}
 {% block content %}
+{% include 'group/_header.html' %}
 <div class="mx-auto max-w-xl">
   <h2 class="mb-6 font-display text-3xl tracking-wide">Ajouter un match</h2>
   <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
