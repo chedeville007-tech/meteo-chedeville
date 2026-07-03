@@ -22,6 +22,9 @@
     </form>
   </div>
   <p class="mt-4 text-center text-sm text-muted">
+    <a href="{{ url_for('auth.forgot_password') }}" class="font-semibold text-cyan hover:underline">Mot de passe oublié ?</a>
+  </p>
+  <p class="mt-2 text-center text-sm text-muted">
     Pas encore de compte ?
     <a href="{{ url_for('auth.register') }}" class="font-semibold text-cyan hover:underline">Créer un compte</a>
   </p>

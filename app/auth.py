@@ -13,7 +13,13 @@ def current_user():
         g.user = None
         if user_id:
             db = get_db()
-            g.user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            g.user = db.execute(
+                """
+                SELECT id, email, pseudo, password_hash, created_at, (avatar_data IS NOT NULL) AS has_avatar
+                FROM users WHERE id = ?
+                """,
+                (user_id,),
+            ).fetchone()
     return g.user
 
 

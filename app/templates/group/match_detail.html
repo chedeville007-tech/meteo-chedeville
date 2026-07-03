@@ -31,11 +31,25 @@
     <p class="mt-4 text-center text-sm text-muted">{{ match['start_time'] | fr_datetime }}</p>
   </div>
 
-  {% if member['is_admin'] and not is_finished %}
+  {% if member['is_admin'] %}
   <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur space-y-4 p-5">
-    <p class="text-xs font-semibold uppercase tracking-wide text-gold">Panneau admin</p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gold">Panneau admin</p>
+      <div class="flex gap-2">
+        <a href="{{ url_for('matches.edit_match', group_id=group['id'], match_id=match['id']) }}"
+           class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
+          Modifier
+        </a>
+        <form method="post" action="{{ url_for('matches.delete_match', group_id=group['id'], match_id=match['id']) }}"
+              onsubmit="return confirm('Supprimer définitivement ce match et tous ses pronostics ?');">
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition bg-surface-2 text-red-400 border border-border hover:border-red-400/60">
+            Supprimer
+          </button>
+        </form>
+      </div>
+    </div>
 
-    {% if match['status'] == 'UPCOMING' %}
+    {% if not is_finished and match['status'] == 'UPCOMING' %}
     <form method="post" action="{{ url_for('matches.start_match', group_id=group['id'], match_id=match['id']) }}">
       <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
         Démarrer le match
@@ -43,6 +57,7 @@
     </form>
     {% endif %}
 
+    {% if not is_finished %}
     <form method="post" action="{{ url_for('matches.finish_match', group_id=group['id'], match_id=match['id']) }}" class="space-y-3">
       <p class="text-xs font-semibold uppercase tracking-wide text-muted">Saisir le score final</p>
       <div class="flex items-center gap-3">
@@ -56,6 +71,7 @@
         </button>
       </div>
     </form>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -145,5 +161,41 @@
     </form>
   </div>
   {% endif %}
+
+  <div id="commentaires" class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <h3 class="mb-4 font-display text-xl tracking-wide text-muted">Commentaires</h3>
+
+    {% if not comments %}
+    <p class="text-sm text-muted-2">Aucun commentaire pour l'instant. Lance la discussion !</p>
+    {% else %}
+    <div class="space-y-3">
+      {% for c in comments %}
+      <div class="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-ink-2 p-3">
+        <div>
+          <p class="text-sm">
+            <span class="font-semibold text-paper">{{ c['member_pseudo'] }}</span>
+            <span class="ml-2 text-xs text-muted-2">{{ c['created_at'] | fr_datetime }}</span>
+          </p>
+          <p class="mt-1 text-sm text-muted">{{ c['content'] }}</p>
+        </div>
+        {% if c['member_id'] == member['id'] or member['is_admin'] %}
+        <form method="post" action="{{ url_for('matches.delete_comment', group_id=group['id'], match_id=match['id'], comment_id=c['id']) }}"
+              onsubmit="return confirm('Supprimer ce commentaire ?');">
+          <button type="submit" class="text-xs text-muted-2 hover:text-red-400">Supprimer</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('matches.add_comment', group_id=group['id'], match_id=match['id']) }}" class="mt-4 flex gap-2">
+      <input name="content" maxlength="500" required placeholder="Ton commentaire..."
+             class="flex-1 rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+        Envoyer
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}

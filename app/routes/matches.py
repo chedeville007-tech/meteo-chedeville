@@ -129,6 +129,101 @@ def new_match(group_id):
     return render_template("group/match_new.html", **template_args)
 
 
+@bp.route("/<match_id>/modifier", methods=["GET", "POST"])
+@login_required
+def edit_match(group_id, match_id):
+    member = require_membership(group_id)
+    if not member["is_admin"]:
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    db = get_db()
+    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    match = db.execute("SELECT * FROM matches WHERE id = ? AND group_id = ?", (match_id, group_id)).fetchone()
+    if match is None:
+        abort(404)
+
+    sports = db.execute("SELECT * FROM sports ORDER BY sort_order ASC").fetchall()
+    competitions = db.execute("SELECT * FROM competitions ORDER BY sort_order ASC").fetchall()
+    competitions_by_sport = {}
+    for c in competitions:
+        competitions_by_sport.setdefault(c["sport_id"], []).append({"id": c["id"], "name": c["name"]})
+    template_args = {
+        "group": group,
+        "member": member,
+        "match": match,
+        "sports": sports,
+        "competitions_by_sport": competitions_by_sport,
+        "active_tab": "upcoming",
+    }
+
+    if request.method == "POST":
+        sport_id = request.form.get("sport_id", "")
+        competition_id = request.form.get("competition_id", "") or None
+        home_name = request.form.get("home_name", "").strip()
+        away_name = request.form.get("away_name", "").strip()
+        start_time_raw = request.form.get("start_time", "")
+
+        error = None
+        if not sport_id:
+            error = "Choisis un sport."
+        elif not home_name or not away_name:
+            error = "Renseigne les deux équipes ou joueurs."
+        elif not start_time_raw:
+            error = "Renseigne la date et l'heure du match."
+        else:
+            try:
+                start_time = datetime.fromisoformat(start_time_raw)
+            except ValueError:
+                error = "Date invalide."
+
+        sport = db.execute("SELECT * FROM sports WHERE id = ?", (sport_id,)).fetchone() if not error else None
+        if not error and sport is None:
+            error = "Sport invalide."
+
+        if not error and competition_id:
+            competition = db.execute(
+                "SELECT id FROM competitions WHERE id = ? AND sport_id = ?", (competition_id, sport_id)
+            ).fetchone()
+            if competition is None:
+                error = "Compétition invalide pour ce sport."
+
+        if error:
+            flash(error, "error")
+            return render_template("group/match_new.html", **template_args)
+
+        db.execute(
+            """
+            UPDATE matches
+            SET sport_id = ?, competition_id = ?, home_name = ?, away_name = ?, start_time = ?
+            WHERE id = ?
+            """,
+            (sport_id, competition_id, home_name, away_name, start_time, match_id),
+        )
+        db.commit()
+        flash("Match modifié.", "success")
+        return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
+
+    return render_template("group/match_new.html", **template_args)
+
+
+@bp.route("/<match_id>/supprimer", methods=["POST"])
+@login_required
+def delete_match(group_id, match_id):
+    member = require_membership(group_id)
+    if not member["is_admin"]:
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    db = get_db()
+    match = db.execute("SELECT id FROM matches WHERE id = ? AND group_id = ?", (match_id, group_id)).fetchone()
+    if match is None:
+        abort(404)
+
+    db.execute("DELETE FROM matches WHERE id = ?", (match_id,))
+    db.commit()
+    flash("Match supprimé.", "success")
+    return redirect(url_for("groups.upcoming", group_id=group_id))
+
+
 @bp.route("/officiel", methods=["GET"])
 @login_required
 def quick_add(group_id):
@@ -259,6 +354,17 @@ def detail(group_id, match_id):
             (match_id,),
         ).fetchall()
 
+    comments = db.execute(
+        """
+        SELECT c.*, mb.pseudo AS member_pseudo
+        FROM comments c
+        JOIN members mb ON mb.id = c.member_id
+        WHERE c.match_id = ?
+        ORDER BY c.created_at ASC
+        """,
+        (match_id,),
+    ).fetchall()
+
     return render_template(
         "group/match_detail.html",
         group=group,
@@ -269,11 +375,56 @@ def detail(group_id, match_id):
         is_finished=is_finished,
         my_prediction=my_prediction,
         predictions=predictions,
+        comments=comments,
         bonus_used=bonus_used,
         bonus_max=MAX_BONUS_PER_COMPETITION,
         bonus_scope_label=bonus_scope_label,
         active_tab="results" if is_finished else "upcoming",
     )
+
+
+@bp.route("/<match_id>/commentaires", methods=["POST"])
+@login_required
+def add_comment(group_id, match_id):
+    member = require_membership(group_id)
+    db = get_db()
+    match = db.execute("SELECT id FROM matches WHERE id = ? AND group_id = ?", (match_id, group_id)).fetchone()
+    if match is None:
+        abort(404)
+
+    content = request.form.get("content", "").strip()
+    detail_url = url_for("matches.detail", group_id=group_id, match_id=match_id)
+    if not content:
+        flash("Le commentaire ne peut pas être vide.", "error")
+        return redirect(detail_url)
+    if len(content) > 500:
+        flash("Commentaire trop long (500 caractères max).", "error")
+        return redirect(detail_url)
+
+    db.execute(
+        "INSERT INTO comments (id, match_id, member_id, content) VALUES (?, ?, ?, ?)",
+        (new_id(), match_id, member["id"], content),
+    )
+    db.commit()
+    return redirect(detail_url + "#commentaires")
+
+
+@bp.route("/<match_id>/commentaires/<comment_id>/supprimer", methods=["POST"])
+@login_required
+def delete_comment(group_id, match_id, comment_id):
+    member = require_membership(group_id)
+    db = get_db()
+    comment = db.execute(
+        "SELECT * FROM comments WHERE id = ? AND match_id = ?", (comment_id, match_id)
+    ).fetchone()
+    if comment is None:
+        abort(404)
+    if comment["member_id"] != member["id"] and not member["is_admin"]:
+        abort(403)
+
+    db.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
+    db.commit()
+    return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id) + "#commentaires")
 
 
 @bp.route("/<match_id>/pronostiquer", methods=["POST"])

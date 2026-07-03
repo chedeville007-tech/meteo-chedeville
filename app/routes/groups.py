@@ -1,6 +1,6 @@
-from flask import Blueprint, abort, redirect, render_template, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from app.auth import get_membership, login_required
+from app.auth import get_membership, login_required, require_admin, require_membership
 from app.db import get_db
 from app.standings import summarize_predictions
 
@@ -130,3 +130,83 @@ def standings(group_id):
         top3=top3,
         active_tab="standings",
     )
+
+
+@bp.route("/membres")
+@login_required
+def members(group_id):
+    group, member = group_gate(group_id)
+    if member is None:
+        return render_template("group/join_prompt.html", group=group)
+
+    db = get_db()
+    members_list = db.execute(
+        "SELECT * FROM members WHERE group_id = ? ORDER BY is_admin DESC, pseudo ASC", (group_id,)
+    ).fetchall()
+
+    return render_template(
+        "group/members.html",
+        group=group,
+        member=member,
+        members=members_list,
+        active_tab="members",
+    )
+
+
+@bp.route("/membres/<member_id>/retirer", methods=["POST"])
+@login_required
+def remove_member(group_id, member_id):
+    admin = require_admin(group_id)
+    if admin["id"] == member_id:
+        flash("Utilise « Quitter le groupe » pour te retirer toi-même.", "error")
+        return redirect(url_for("groups.members", group_id=group_id))
+
+    db = get_db()
+    target = db.execute("SELECT * FROM members WHERE id = ? AND group_id = ?", (member_id, group_id)).fetchone()
+    if target is None:
+        abort(404)
+
+    db.execute("DELETE FROM members WHERE id = ?", (member_id,))
+    db.commit()
+    flash(f"{target['pseudo']} a été retiré du groupe.", "success")
+    return redirect(url_for("groups.members", group_id=group_id))
+
+
+@bp.route("/membres/<member_id>/transferer", methods=["POST"])
+@login_required
+def transfer_admin(group_id, member_id):
+    admin = require_admin(group_id)
+    if admin["id"] == member_id:
+        flash("Tu es déjà admin.", "error")
+        return redirect(url_for("groups.members", group_id=group_id))
+
+    db = get_db()
+    target = db.execute("SELECT * FROM members WHERE id = ? AND group_id = ?", (member_id, group_id)).fetchone()
+    if target is None:
+        abort(404)
+
+    db.execute("UPDATE members SET is_admin = false WHERE id = ?", (admin["id"],))
+    db.execute("UPDATE members SET is_admin = true WHERE id = ?", (member_id,))
+    db.commit()
+    flash(f"{target['pseudo']} est maintenant admin du groupe.", "success")
+    return redirect(url_for("groups.members", group_id=group_id))
+
+
+@bp.route("/quitter", methods=["POST"])
+@login_required
+def leave_group(group_id):
+    member = require_membership(group_id)
+    db = get_db()
+
+    if member["is_admin"]:
+        other_members = db.execute(
+            "SELECT COUNT(*) AS c FROM members WHERE group_id = ? AND id != ?", (group_id, member["id"])
+        ).fetchone()
+        if other_members["c"] > 0:
+            flash("Transfère l'administration à quelqu'un avant de quitter le groupe.", "error")
+            return redirect(url_for("groups.members", group_id=group_id))
+
+    db.execute("DELETE FROM members WHERE id = ?", (member["id"],))
+    db.commit()
+    flash("Tu as quitté le groupe.", "success")
+    return redirect(url_for("home.index"))

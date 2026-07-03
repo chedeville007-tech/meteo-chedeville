@@ -29,3 +29,31 @@ def summarize_predictions(predictions: list[dict]) -> dict:
         "exact_count": exact_count,
         "finished_count": finished_count,
     }
+
+
+def compute_personal_stats(predictions_desc: list[dict]) -> dict:
+    """predictions_desc: lignes de pronostics sur des matchs FINISHED, avec points,
+    sport_label, triées par date de match décroissante (plus récent en premier)."""
+    finished_count = len(predictions_desc)
+    correct_count = sum(1 for p in predictions_desc if p["points"] and p["points"] > 0)
+    win_rate = round(100 * correct_count / finished_count) if finished_count else 0
+
+    points_by_sport: dict[str, int] = {}
+    for p in predictions_desc:
+        points_by_sport[p["sport_label"]] = points_by_sport.get(p["sport_label"], 0) + (p["points"] or 0)
+    best_sport = max(points_by_sport, key=points_by_sport.get) if points_by_sport else None
+
+    streak = 0
+    for p in predictions_desc:
+        if p["points"] and p["points"] > 0:
+            streak += 1
+        else:
+            break
+
+    return {
+        "finished_count": finished_count,
+        "correct_count": correct_count,
+        "win_rate": win_rate,
+        "best_sport": best_sport,
+        "current_streak": streak,
+    }

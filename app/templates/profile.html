@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Mon profil — MultiProno{% endblock %}
+{% block content %}
+{% set user = current_user() %}
+<div class="mx-auto max-w-xl space-y-6">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="font-display text-3xl tracking-wide">Mon profil</h2>
+    <a href="{{ url_for('profile.stats') }}" class="text-sm font-semibold text-cyan hover:underline">Mes statistiques →</a>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-muted">Photo de profil</p>
+    <div class="flex flex-wrap items-center gap-4">
+      {% if user['has_avatar'] %}
+      <img src="{{ url_for('avatar.avatar', user_id=user['id']) }}" alt="Avatar" class="h-16 w-16 rounded-full object-cover border border-border">
+      {% else %}
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-ink-2 font-display text-2xl text-muted">
+        {{ user['pseudo'][:1] | upper }}
+      </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('profile.update_photo') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2">
+        <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" required
+               class="text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-paper hover:file:bg-ink-2">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+          Changer
+        </button>
+      </form>
+      {% if user['has_avatar'] %}
+      <form method="post" action="{{ url_for('profile.delete_photo') }}" onsubmit="return confirm('Supprimer ta photo de profil ?');">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition bg-surface-2 text-red-400 border border-border hover:border-red-400/60">
+          Supprimer
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-muted">Informations</p>
+    <form method="post" action="{{ url_for('profile.update_infos') }}" class="space-y-4">
+      <div class="space-y-1.5">
+        <label for="pseudo" class="text-xs font-semibold uppercase tracking-wide text-muted">Pseudo</label>
+        <input id="pseudo" name="pseudo" required value="{{ user['pseudo'] }}"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <div class="space-y-1.5">
+        <label for="email" class="text-xs font-semibold uppercase tracking-wide text-muted">E-mail</label>
+        <input id="email" name="email" type="email" required value="{{ user['email'] }}"
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+        Enregistrer
+      </button>
+    </form>
+  </div>
+
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-muted">Mot de passe</p>
+    <form method="post" action="{{ url_for('profile.update_password') }}" class="space-y-4">
+      <div class="space-y-1.5">
+        <label for="current_password" class="text-xs font-semibold uppercase tracking-wide text-muted">Mot de passe actuel</label>
+        <input id="current_password" name="current_password" type="password" required
+               class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-1.5">
+          <label for="new_password" class="text-xs font-semibold uppercase tracking-wide text-muted">Nouveau mot de passe</label>
+          <input id="new_password" name="new_password" type="password" required
+                 class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+        </div>
+        <div class="space-y-1.5">
+          <label for="new_password_confirm" class="text-xs font-semibold uppercase tracking-wide text-muted">Confirmation</label>
+          <input id="new_password_confirm" name="new_password_confirm" type="password" required
+                 class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+        </div>
+      </div>
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-paper border border-border hover:border-cyan/60 hover:text-cyan">
+        Changer le mot de passe
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -39,11 +39,13 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.jinja_env.globals["icon_name_for"] = icon_name_for
     app.jinja_env.globals["current_user"] = current_user
 
-    from app.routes import auth, home, groups, matches
+    from app.routes import auth, home, groups, matches, profile
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(home.bp)
     app.register_blueprint(groups.bp)
     app.register_blueprint(matches.bp)
+    app.register_blueprint(profile.bp)
+    app.register_blueprint(profile.avatar_bp)
 
     return app

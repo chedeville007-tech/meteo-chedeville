@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Mes statistiques — MultiProno{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl space-y-6">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="font-display text-3xl tracking-wide">Mes statistiques</h2>
+    <a href="{{ url_for('profile.index') }}" class="text-sm text-muted hover:text-brand">← Profil</a>
+  </div>
+
+  {% if stats.finished_count == 0 %}
+  <div class="rounded-2xl border border-dashed border-border p-10 text-center text-muted">
+    Aucun match terminé pour l'instant — pronostique pour voir tes statistiques ici.
+  </div>
+  {% else %}
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Taux de réussite</p>
+      <p class="mt-2 scoreboard-num text-4xl text-gold">{{ stats.win_rate }}%</p>
+      <p class="mt-1 text-xs text-muted-2">{{ stats.correct_count }} / {{ stats.finished_count }} pronostics gagnants</p>
+    </div>
+    <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Série en cours</p>
+      <p class="mt-2 scoreboard-num text-4xl text-brand">{{ stats.current_streak }}</p>
+      <p class="mt-1 text-xs text-muted-2">bon{{ 's' if stats.current_streak > 1 else '' }} pronostic{{ 's' if stats.current_streak > 1 else '' }} d'affilée</p>
+    </div>
+    <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 text-center sm:col-span-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted">Meilleur sport</p>
+      <p class="mt-2 font-display text-3xl tracking-wide text-cyan">{{ stats.best_sport or '—' }}</p>
+      <p class="mt-1 text-xs text-muted-2">celui où tu marques le plus de points au total</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

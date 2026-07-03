@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
 {% from 'partials/sport_picker.html' import sport_picker %}
-{% block title %}Ajouter un match — {{ group['name'] }}{% endblock %}
+{% set editing = match is defined and match %}
+{% block title %}{{ 'Modifier le match' if editing else 'Ajouter un match' }} — {{ group['name'] }}{% endblock %}
 {% block content %}
 {% include 'group/_header.html' %}
 <div class="mx-auto max-w-xl"
-     x-data='{ sport: "{{ sports[0]["id"] if sports else "" }}", competitionsBySport: {{ competitions_by_sport | tojson }} }'>
-  <h2 class="mb-6 font-display text-3xl tracking-wide">Ajouter un match</h2>
+     x-data='{ sport: "{{ match["sport_id"] if editing else (sports[0]["id"] if sports else "") }}", competitionsBySport: {{ competitions_by_sport | tojson }} }'>
+  <h2 class="mb-6 font-display text-3xl tracking-wide">{{ 'Modifier le match' if editing else 'Ajouter un match' }}</h2>
   <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
-    <form method="post" action="{{ url_for('matches.new_match', group_id=group['id']) }}" class="space-y-5">
+    <form method="post" action="{{ url_for('matches.edit_match', group_id=group['id'], match_id=match['id']) if editing else url_for('matches.new_match', group_id=group['id']) }}" class="space-y-5">
       <div class="space-y-1.5">
         <label class="text-xs font-semibold uppercase tracking-wide text-muted">Sport</label>
         {{ sport_picker(sports, x_model='sport') }}
@@ -19,7 +20,7 @@
                 class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
           <option value="">— Aucune / amical —</option>
           <template x-for="comp in (competitionsBySport[sport] || [])" :key="comp.id">
-            <option :value="comp.id" x-text="comp.name"></option>
+            <option :value="comp.id" x-text="comp.name" :selected="comp.id === '{{ match['competition_id'] if editing else '' }}'"></option>
           </template>
         </select>
       </div>
@@ -27,24 +28,24 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-1.5">
           <label for="home_name" class="text-xs font-semibold uppercase tracking-wide text-muted">Équipe / joueur à domicile</label>
-          <input id="home_name" name="home_name" required placeholder="Ex : Marseille"
+          <input id="home_name" name="home_name" required placeholder="Ex : Marseille" value="{{ match['home_name'] if editing else '' }}"
                  class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
         </div>
         <div class="space-y-1.5">
           <label for="away_name" class="text-xs font-semibold uppercase tracking-wide text-muted">Équipe / joueur visiteur</label>
-          <input id="away_name" name="away_name" required placeholder="Ex : Lyon"
+          <input id="away_name" name="away_name" required placeholder="Ex : Lyon" value="{{ match['away_name'] if editing else '' }}"
                  class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
         </div>
       </div>
 
       <div class="space-y-1.5">
         <label for="start_time" class="text-xs font-semibold uppercase tracking-wide text-muted">Date et heure du coup d'envoi</label>
-        <input id="start_time" name="start_time" type="datetime-local" required
+        <input id="start_time" name="start_time" type="datetime-local" required value="{{ match['start_time'].strftime('%Y-%m-%dT%H:%M') if editing else '' }}"
                class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper placeholder:text-muted-2 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
       </div>
 
       <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
-        Ajouter le match
+        {{ 'Enregistrer les modifications' if editing else 'Ajouter le match' }}
       </button>
     </form>
   </div>

@@ -28,7 +28,13 @@
         </a>
         {% set user = current_user() %}
         {% if user %}
-        <span class="hidden text-sm text-muted sm:inline">{{ user['pseudo'] }}</span>
+        <a href="{{ url_for('profile.index') }}"
+           class="inline-flex items-center gap-2 rounded-lg border border-border px-2.5 py-1 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
+          {% if user['has_avatar'] %}
+          <img src="{{ url_for('avatar.avatar', user_id=user['id']) }}" alt="" class="h-5 w-5 rounded-full object-cover">
+          {% endif %}
+          <span class="hidden sm:inline">{{ user['pseudo'] }}</span>
+        </a>
         <form method="post" action="{{ url_for('auth.logout') }}">
           <button type="submit" class="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-brand/50 hover:text-brand">
             Déconnexion

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}{{ group['name'] }} — Membres{% endblock %}
+{% block content %}
+{% include 'group/_header.html' %}
+
+<div class="mx-auto max-w-2xl space-y-6">
+  <div class="overflow-hidden rounded-2xl border border-border bg-surface/70">
+    {% for m in members %}
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4 last:border-b-0">
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-paper">{{ m['pseudo'] }}</span>
+        {% if m['id'] == member['id'] %}<span class="text-xs text-brand">toi</span>{% endif %}
+        {% if m['is_admin'] %}
+        <span class="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-gold">Admin</span>
+        {% endif %}
+      </div>
+
+      {% if member['is_admin'] and m['id'] != member['id'] %}
+      <div class="flex flex-wrap gap-2">
+        <form method="post" action="{{ url_for('groups.transfer_admin', group_id=group['id'], member_id=m['id']) }}"
+              onsubmit="return confirm('Transférer l\'administration à {{ m['pseudo'] }} ?');">
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition bg-surface-2 text-paper border border-border hover:border-gold/60 hover:text-gold">
+            Rendre admin
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('groups.remove_member', group_id=group['id'], member_id=m['id']) }}"
+              onsubmit="return confirm('Retirer {{ m['pseudo'] }} du groupe ?');">
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition bg-surface-2 text-red-400 border border-border hover:border-red-400/60">
+            Retirer
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5">
+    <form method="post" action="{{ url_for('groups.leave_group', group_id=group['id']) }}"
+          onsubmit="return confirm('Quitter ce groupe ?');">
+      <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-surface-2 text-red-400 border border-border hover:border-red-400/60">
+        Quitter le groupe
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

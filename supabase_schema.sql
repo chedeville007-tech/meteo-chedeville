@@ -16,11 +16,25 @@ create table if not exists users (
   email text unique,
   password_hash text,
   pseudo text,
+  avatar_data bytea,
+  avatar_mimetype text,
   created_at timestamptz not null default now()
 );
 alter table users add column if not exists email text unique;
 alter table users add column if not exists password_hash text;
 alter table users add column if not exists pseudo text;
+alter table users add column if not exists avatar_data bytea;
+alter table users add column if not exists avatar_mimetype text;
+
+create table if not exists password_resets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  token text not null unique,
+  expires_at timestamptz not null,
+  used boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_password_resets_user on password_resets(user_id);
 
 create table if not exists groups (
   id uuid primary key default gen_random_uuid(),
@@ -105,11 +119,20 @@ create table if not exists predictions (
 );
 alter table predictions add column if not exists bonus_activated boolean not null default false;
 
+create table if not exists comments (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references matches(id) on delete cascade,
+  member_id uuid not null references members(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_members_group on members(group_id);
 create index if not exists idx_matches_group on matches(group_id);
 create index if not exists idx_competitions_sport on competitions(sport_id);
 create index if not exists idx_predictions_match on predictions(match_id);
 create index if not exists idx_predictions_member on predictions(member_id);
+create index if not exists idx_comments_match on comments(match_id);
 
 -- ========================================================================
 -- Sports pré-remplis (idempotent : relancer met juste à jour les valeurs)
@@ -202,3 +225,5 @@ alter table competitions enable row level security;
 alter table official_fixtures enable row level security;
 alter table matches enable row level security;
 alter table predictions enable row level security;
+alter table comments enable row level security;
+alter table password_resets enable row level security;

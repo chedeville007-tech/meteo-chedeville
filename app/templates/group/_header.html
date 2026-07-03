@@ -38,4 +38,8 @@
      class="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if active_tab == 'standings' else 'text-muted hover:text-paper' }}">
     Classement
   </a>
+  <a href="{{ url_for('groups.members', group_id=group['id']) }}"
+     class="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-brand text-white' if active_tab == 'members' else 'text-muted hover:text-paper' }}">
+    Membres
+  </a>
 </div>
