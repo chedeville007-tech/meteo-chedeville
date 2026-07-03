@@ -151,8 +151,9 @@ from (values
   ('MMA', 'UFC', 0), ('MMA', 'Bellator', 1), ('MMA', 'PFL', 2), ('MMA', 'ONE Championship', 3),
   ('HANDBALL', 'Starligue', 0), ('HANDBALL', 'Ligue des champions EHF', 1),
   ('HANDBALL', 'Championnat du Monde', 2), ('HANDBALL', 'Jeux Olympiques', 3),
-  ('VOLLEYBALL', 'Ligue A', 0), ('VOLLEYBALL', 'Ligue des champions CEV', 1),
-  ('VOLLEYBALL', 'Championnat du Monde', 2), ('VOLLEYBALL', 'Jeux Olympiques', 3),
+  ('VOLLEYBALL', 'Ligue des Nations (VNL)', 0), ('VOLLEYBALL', 'Ligue A', 1),
+  ('VOLLEYBALL', 'Ligue des champions CEV', 2), ('VOLLEYBALL', 'Championnat du Monde', 3),
+  ('VOLLEYBALL', 'Jeux Olympiques', 4),
   ('ICE_HOCKEY', 'NHL', 0), ('ICE_HOCKEY', 'Championnat du Monde IIHF', 1),
   ('ICE_HOCKEY', 'Ligue Magnus', 2), ('ICE_HOCKEY', 'Jeux Olympiques', 3),
   ('BOXING', 'Championnat du Monde WBC', 0), ('BOXING', 'Championnat du Monde WBA', 1),
@@ -160,6 +161,34 @@ from (values
 ) as c(sport_key, name, sort_order)
 join sports s on s.key = c.sport_key
 on conflict (sport_id, name) do update set sort_order = excluded.sort_order;
+
+-- ========================================================================
+-- Calendrier officiel pre-rempli a la main (etat au 03/07/2026, a completer) --
+-- via le menu "Ajout officiel rapide". Idempotent (ignore les doublons).
+-- ========================================================================
+insert into official_fixtures (competition_id, home_name, away_name, start_time, note)
+select comp.id, f.home_name, f.away_name, f.start_time::timestamptz, f.note
+from (values
+  ('FOOTBALL', 'Ligue 1', 'Paris Saint-Germain', 'Stade Rennais', '2026-08-21 19:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'Olympique de Marseille', 'RC Strasbourg', '2026-08-22 15:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'RC Lens', 'AJ Auxerre', '2026-08-22 17:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'OGC Nice', 'FC Lorient', '2026-08-22 19:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'Angers SCO', 'LOSC Lille', '2026-08-23 11:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'Le Mans FC', 'Stade Brestois', '2026-08-23 13:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'Troyes ESTAC', 'Paris FC', '2026-08-23 13:00+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('FOOTBALL', 'Ligue 1', 'Le Havre AC', 'AS Monaco', '2026-08-23 15:05+00', 'Affiche confirmee (LFP), horaire indicatif'),
+  ('MMA', 'UFC', 'Conor McGregor', 'Max Holloway', '2026-07-12 01:00+00', 'UFC 329 - International Fight Week (confirme UFC.com)'),
+  ('MMA', 'UFC', 'Benoit Saint-Denis', 'Paddy Pimblett', '2026-07-11 23:00+00', 'UFC 329 - International Fight Week (confirme UFC.com)'),
+  ('VOLLEYBALL', 'Ligue des Nations (VNL)', 'France', 'Bresil', '2026-07-15 18:00+00', 'VNL 2026, poules equipe de France (confirme FFVB)'),
+  ('VOLLEYBALL', 'Ligue des Nations (VNL)', 'France', 'Pologne', '2026-07-18 18:00+00', 'VNL 2026, poules equipe de France (confirme FFVB)'),
+  ('VOLLEYBALL', 'Ligue des Nations (VNL)', 'Bulgarie', 'France', '2026-07-19 18:00+00', 'VNL 2026, poules equipe de France (confirme FFVB)')
+) as f(sport_key, competition_name, home_name, away_name, start_time, note)
+join sports s on s.key = f.sport_key
+join competitions comp on comp.sport_id = s.id and comp.name = f.competition_name
+where not exists (
+  select 1 from official_fixtures ofx
+  where ofx.competition_id = comp.id and ofx.home_name = f.home_name and ofx.away_name = f.away_name
+);
 
 -- ========================================================================
 -- Row Level Security : verrouillée par défaut (pas de policy = pas d'accès

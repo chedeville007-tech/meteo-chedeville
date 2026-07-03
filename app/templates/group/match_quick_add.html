@@ -8,9 +8,14 @@
        sport: "{{ sports[0]["id"] if sports else "" }}",
        competition: "",
        competitionsBySport: {{ competitions_by_sport | tojson }},
-       fixturesByCompetition: {{ fixtures_by_competition | tojson }}
-     }'
-     x-init="competition = (competitionsBySport[sport] && competitionsBySport[sport][0]) ? competitionsBySport[sport][0].id : ''">
+       fixturesByCompetition: {{ fixtures_by_competition | tojson }},
+       init() {
+         this.competition = (this.competitionsBySport[this.sport] && this.competitionsBySport[this.sport][0]) ? this.competitionsBySport[this.sport][0].id : "";
+         this.$watch("sport", (value) => {
+           this.competition = (this.competitionsBySport[value] && this.competitionsBySport[value][0]) ? this.competitionsBySport[value][0].id : "";
+         });
+       }
+     }'>
   <h2 class="mb-2 font-display text-3xl tracking-wide">Ajout officiel rapide</h2>
   <p class="mb-6 text-sm text-muted">
     Choisis un sport puis une compétition : les vrais matchs déjà répertoriés apparaissent ci-dessous,
