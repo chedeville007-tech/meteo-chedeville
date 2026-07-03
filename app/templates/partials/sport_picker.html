@@ -1,10 +1,12 @@
 {% from 'partials/icons.html' import sport_icon %}
 
-{% macro sport_picker(sports, name='sport_id') %}
+{% macro sport_picker(sports, name='sport_id', x_model=none) %}
 <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
   {% for sport in sports %}
   <label class="cursor-pointer">
-    <input type="radio" name="{{ name }}" value="{{ sport['id'] }}" class="peer sr-only" required {{ 'checked' if loop.first }}>
+    <input type="radio" name="{{ name }}" value="{{ sport['id'] }}" class="peer sr-only" required
+           {{ 'checked' if loop.first }}
+           {{ ('x-model="' ~ x_model ~ '"') | safe if x_model }}>
     <div class="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-ink-2 p-3 text-center transition peer-checked:bg-[color-mix(in_srgb,var(--sport-color)_18%,transparent)] peer-checked:[border-color:var(--sport-color)]"
          style="--sport-color: {{ sport['color'] }};">
       {{ sport_icon(icon_name_for(sport['key']), 'h-6 w-6') }}

@@ -9,6 +9,7 @@ from app.scoring import compute_outcome, compute_prediction_points
 bp = Blueprint("matches", __name__, url_prefix="/groupes/<group_id>/matchs")
 
 VALID_OUTCOMES = {"HOME", "AWAY", "DRAW"}
+MAX_BONUS_PER_COMPETITION = 2
 
 
 def _recompute_match_points(match_id: str) -> None:
@@ -25,13 +26,36 @@ def _recompute_match_points(match_id: str) -> None:
             prediction["predicted_away_score"],
             match["home_score"],
             match["away_score"],
-            bool(match["double_bonus"]),
+            bool(prediction["bonus_activated"]),
         )
         db.execute(
             "UPDATE predictions SET points = ?, updated_at = now() WHERE id = ?",
             (points, prediction["id"]),
         )
     db.commit()
+
+
+def _count_active_bonuses(member_id: str, sport_id: str, competition_id: str | None, exclude_match_id: str) -> int:
+    db = get_db()
+    if competition_id:
+        row = db.execute(
+            """
+            SELECT COUNT(*) AS c FROM predictions p
+            JOIN matches m ON m.id = p.match_id
+            WHERE p.member_id = ? AND p.bonus_activated = ? AND m.competition_id = ? AND p.match_id != ?
+            """,
+            (member_id, True, competition_id, exclude_match_id),
+        ).fetchone()
+    else:
+        row = db.execute(
+            """
+            SELECT COUNT(*) AS c FROM predictions p
+            JOIN matches m ON m.id = p.match_id
+            WHERE p.member_id = ? AND p.bonus_activated = ? AND m.sport_id = ? AND m.competition_id IS NULL AND p.match_id != ?
+            """,
+            (member_id, True, sport_id, exclude_match_id),
+        ).fetchone()
+    return row["c"]
 
 
 @bp.route("/nouveau", methods=["GET", "POST"])
@@ -44,9 +68,21 @@ def new_match(group_id):
     db = get_db()
     group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
     sports = db.execute("SELECT * FROM sports ORDER BY sort_order ASC").fetchall()
+    competitions = db.execute("SELECT * FROM competitions ORDER BY sort_order ASC").fetchall()
+    competitions_by_sport = {}
+    for c in competitions:
+        competitions_by_sport.setdefault(c["sport_id"], []).append({"id": c["id"], "name": c["name"]})
+    template_args = {
+        "group": group,
+        "member": member,
+        "sports": sports,
+        "competitions_by_sport": competitions_by_sport,
+        "active_tab": "upcoming",
+    }
 
     if request.method == "POST":
         sport_id = request.form.get("sport_id", "")
+        competition_id = request.form.get("competition_id", "") or None
         home_name = request.form.get("home_name", "").strip()
         away_name = request.form.get("away_name", "").strip()
         start_time_raw = request.form.get("start_time", "")
@@ -68,22 +104,29 @@ def new_match(group_id):
         if not error and sport is None:
             error = "Sport invalide."
 
+        if not error and competition_id:
+            competition = db.execute(
+                "SELECT id FROM competitions WHERE id = ? AND sport_id = ?", (competition_id, sport_id)
+            ).fetchone()
+            if competition is None:
+                error = "Compétition invalide pour ce sport."
+
         if error:
             flash(error, "error")
-            return render_template("group/match_new.html", group=group, member=member, sports=sports, active_tab="upcoming")
+            return render_template("group/match_new.html", **template_args)
 
         match_id = new_id()
         db.execute(
             """
-            INSERT INTO matches (id, group_id, sport_id, home_name, away_name, start_time)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO matches (id, group_id, sport_id, competition_id, home_name, away_name, start_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (match_id, group_id, sport_id, home_name, away_name, start_time),
+            (match_id, group_id, sport_id, competition_id, home_name, away_name, start_time),
         )
         db.commit()
         return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
 
-    return render_template("group/match_new.html", group=group, member=member, sports=sports, active_tab="upcoming")
+    return render_template("group/match_new.html", **template_args)
 
 
 @bp.route("/<match_id>")
@@ -95,9 +138,11 @@ def detail(group_id, match_id):
     group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
     match = db.execute(
         """
-        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color, s.allow_draw AS sport_allow_draw
+        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color, s.allow_draw AS sport_allow_draw,
+               c.name AS competition_name
         FROM matches m
         JOIN sports s ON s.id = m.sport_id
+        LEFT JOIN competitions c ON c.id = m.competition_id
         WHERE m.id = ? AND m.group_id = ?
         """,
         (match_id, group_id),
@@ -112,6 +157,9 @@ def detail(group_id, match_id):
     my_prediction = db.execute(
         "SELECT * FROM predictions WHERE match_id = ? AND member_id = ?", (match_id, member["id"])
     ).fetchone()
+
+    bonus_used = _count_active_bonuses(member["id"], match["sport_id"], match["competition_id"], match_id)
+    bonus_scope_label = match["competition_name"] or match["sport_label"]
 
     predictions = []
     if is_finished:
@@ -136,6 +184,9 @@ def detail(group_id, match_id):
         is_finished=is_finished,
         my_prediction=my_prediction,
         predictions=predictions,
+        bonus_used=bonus_used,
+        bonus_max=MAX_BONUS_PER_COMPETITION,
+        bonus_scope_label=bonus_scope_label,
         active_tab="results" if is_finished else "upcoming",
     )
 
@@ -195,24 +246,38 @@ def predict(group_id, match_id):
             return redirect(detail_url)
 
     existing = db.execute(
-        "SELECT id FROM predictions WHERE match_id = ? AND member_id = ?", (match_id, member["id"])
+        "SELECT id, bonus_activated FROM predictions WHERE match_id = ? AND member_id = ?", (match_id, member["id"])
     ).fetchone()
+    was_bonus_active = bool(existing["bonus_activated"]) if existing else False
+    wants_bonus = bool(request.form.get("bonus_activated"))
+
+    if wants_bonus and not was_bonus_active:
+        used = _count_active_bonuses(member["id"], match["sport_id"], match["competition_id"], match_id)
+        if used >= MAX_BONUS_PER_COMPETITION:
+            flash(
+                f"Tu as déjà utilisé tes {MAX_BONUS_PER_COMPETITION} bonus x2 pour cette compétition.",
+                "error",
+            )
+            return redirect(detail_url)
+
     if existing:
         db.execute(
             """
             UPDATE predictions
-            SET predicted_outcome = ?, predicted_home_score = ?, predicted_away_score = ?, updated_at = now()
+            SET predicted_outcome = ?, predicted_home_score = ?, predicted_away_score = ?,
+                bonus_activated = ?, updated_at = now()
             WHERE id = ?
             """,
-            (predicted_outcome, predicted_home_score, predicted_away_score, existing["id"]),
+            (predicted_outcome, predicted_home_score, predicted_away_score, wants_bonus, existing["id"]),
         )
     else:
         db.execute(
             """
-            INSERT INTO predictions (id, match_id, member_id, predicted_outcome, predicted_home_score, predicted_away_score)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO predictions
+                (id, match_id, member_id, predicted_outcome, predicted_home_score, predicted_away_score, bonus_activated)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (new_id(), match_id, member["id"], predicted_outcome, predicted_home_score, predicted_away_score),
+            (new_id(), match_id, member["id"], predicted_outcome, predicted_home_score, predicted_away_score, wants_bonus),
         )
     db.commit()
 
@@ -230,26 +295,6 @@ def start_match(group_id, match_id):
         (match_id, group_id),
     )
     db.commit()
-    return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
-
-
-@bp.route("/<match_id>/bonus", methods=["POST"])
-@login_required
-def toggle_bonus(group_id, match_id):
-    require_admin(group_id)
-    db = get_db()
-    match = db.execute("SELECT * FROM matches WHERE id = ? AND group_id = ?", (match_id, group_id)).fetchone()
-    if match is None:
-        abort(404)
-
-    if match["double_bonus"]:
-        db.execute("UPDATE matches SET double_bonus = ? WHERE id = ?", (False, match_id))
-    else:
-        db.execute("UPDATE matches SET double_bonus = ? WHERE group_id = ? AND double_bonus = ?", (False, group_id, True))
-        db.execute("UPDATE matches SET double_bonus = ? WHERE id = ?", (True, match_id))
-    db.commit()
-
-    _recompute_match_points(match_id)
     return redirect(url_for("matches.detail", group_id=group_id, match_id=match_id))
 
 

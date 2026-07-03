@@ -71,11 +71,23 @@ Dans le dashboard Render → Settings → Environment, ajoute :
 Tous les matchs (tous sports) sont ajoutés à la main par l'admin du groupe — pas d'import
 automatique (aucune API gratuite avec accès à la saison en cours n'a été jugée satisfaisante).
 
+## Sports et compétitions
+
+10 sports : Football, Rugby, Tennis, Ping-pong, Basketball, MMA, Handball, Volleyball, Hockey sur
+glace, Boxe. Chaque sport a sa liste de compétitions/ligues courantes (Ligue 1, NBA, UFC, Roland-Garros...)
+sélectionnable à l'ajout d'un match — voir `competitions` dans `supabase_schema.sql`.
+
+## Bonus x2
+
+Le bonus x2 est individuel : chaque membre choisit lui-même, en pronostiquant, sur quel match
+l'activer (double tous ses points sur ce match). Limite : 2 activations par compétition (ou par
+sport si le match n'a pas de compétition renseignée). Ce n'est plus un réglage admin global.
+
 ## Structure
 
-- `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, matches, predictions)
+- `app/db.py` — connexion PostgreSQL (`psycopg2`), `supabase_schema.sql` — schéma (users, groups, members, sports, competitions, matches, predictions)
 - `app/auth.py` — comptes email + mot de passe (werkzeug), sessions Flask ; un `User` peut appartenir à plusieurs `Group` via `Member`
-- `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé sur le match)
+- `app/scoring.py` — calcul des points (10 pts vainqueur, +50% si score exact, x2 si bonus activé par le membre sur ce match)
 - `app/routes/` — routes Flask (accueil, groupes, matchs, pronostics)
 - `app/templates/` — templates Jinja2 (`group/` = pages d'un groupe avec onglets)
 

@@ -16,8 +16,10 @@ def compute_prediction_points(
     predicted_away_score: int | None,
     actual_home_score: int,
     actual_away_score: int,
-    double_bonus: bool,
+    bonus_activated: bool,
 ) -> int:
+    """bonus_activated : bonus x2 choisi par le membre lui-même sur ce match
+    (double tous les points qu'il gagne dessus, indépendamment des autres membres)."""
     actual_outcome = compute_outcome(actual_home_score, actual_away_score)
     if predicted_outcome != actual_outcome:
         return 0
@@ -33,7 +35,7 @@ def compute_prediction_points(
     if exact_correct:
         points += POINTS_WINNER * EXACT_SCORE_BONUS_RATE
 
-    if double_bonus:
+    if bonus_activated:
         points *= 2
 
     return int(points)

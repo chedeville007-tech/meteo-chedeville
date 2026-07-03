@@ -1,14 +1,16 @@
-{% from 'partials/macros.html' import sport_badge, status_badge, double_bonus_badge %}
+{% from 'partials/macros.html' import sport_badge, status_badge %}
 
 {% macro match_card(group_id, match) %}
 <a href="{{ url_for('matches.detail', group_id=group_id, match_id=match['id']) }}"
    class="block rounded-2xl border border-border bg-surface/70 p-4 transition hover:border-brand/40 hover:bg-surface-2 sm:p-5">
   <div class="flex items-center justify-between gap-3">
-    {{ sport_badge({'key': match['sport_key'], 'label': match['sport_label'], 'color': match['sport_color']}, 'sm') }}
-    <div class="flex items-center gap-2">
-      {% if match['double_bonus'] %}{{ double_bonus_badge() }}{% endif %}
-      {{ status_badge(match['status']) }}
+    <div>
+      {{ sport_badge({'key': match['sport_key'], 'label': match['sport_label'], 'color': match['sport_color']}, 'sm') }}
+      {% if match['competition_name'] %}
+      <span class="ml-1 text-xs text-muted-2">{{ match['competition_name'] }}</span>
+      {% endif %}
     </div>
+    {{ status_badge(match['status']) }}
   </div>
 
   <div class="mt-4 flex items-center justify-center gap-3 text-center sm:gap-5">

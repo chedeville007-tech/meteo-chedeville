@@ -32,10 +32,11 @@ def upcoming(group_id):
     db = get_db()
     matches = db.execute(
         """
-        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color,
+        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color, c.name AS competition_name,
           EXISTS(SELECT 1 FROM predictions p WHERE p.match_id = m.id AND p.member_id = ?) AS has_predicted
         FROM matches m
         JOIN sports s ON s.id = m.sport_id
+        LEFT JOIN competitions c ON c.id = m.competition_id
         WHERE m.group_id = ? AND m.status IN ('UPCOMING', 'LIVE')
         ORDER BY m.start_time ASC
         """,
@@ -57,9 +58,10 @@ def results(group_id):
     db = get_db()
     matches = db.execute(
         """
-        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color
+        SELECT m.*, s.key AS sport_key, s.label AS sport_label, s.color AS sport_color, c.name AS competition_name
         FROM matches m
         JOIN sports s ON s.id = m.sport_id
+        LEFT JOIN competitions c ON c.id = m.competition_id
         WHERE m.group_id = ? AND m.status = 'FINISHED'
         ORDER BY m.start_time DESC
         """,

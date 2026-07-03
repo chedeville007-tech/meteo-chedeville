@@ -32,6 +32,9 @@
         </td>
         <td class="py-2 pr-3 font-display text-xl">
           <span class="{{ 'text-gold' if (prediction['points'] or 0) > 0 else 'text-muted-2' }}">{{ prediction['points'] or 0 }} pts</span>
+          {% if prediction['bonus_activated'] %}
+          <span class="ml-1.5 rounded-full border border-gold/50 bg-gold/10 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-gold">x2</span>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
