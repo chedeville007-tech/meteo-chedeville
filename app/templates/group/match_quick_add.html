@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% from 'partials/sport_picker.html' import sport_picker %}
+{% block title %}Ajout officiel rapide — {{ group['name'] }}{% endblock %}
+{% block content %}
+{% include 'group/_header.html' %}
+<div class="mx-auto max-w-2xl"
+     x-data='{
+       sport: "{{ sports[0]["id"] if sports else "" }}",
+       competition: "",
+       competitionsBySport: {{ competitions_by_sport | tojson }},
+       fixturesByCompetition: {{ fixtures_by_competition | tojson }}
+     }'
+     x-init="competition = (competitionsBySport[sport] && competitionsBySport[sport][0]) ? competitionsBySport[sport][0].id : ''">
+  <h2 class="mb-2 font-display text-3xl tracking-wide">Ajout officiel rapide</h2>
+  <p class="mb-6 text-sm text-muted">
+    Choisis un sport puis une compétition : les vrais matchs déjà répertoriés apparaissent ci-dessous,
+    ajoute-les en un clic. Calendrier renseigné à la main (pas d'API temps réel) — encore partiel,
+    dis-moi quelle compétition tu veux en priorité si elle manque.
+  </p>
+
+  <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 sm:p-6">
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold uppercase tracking-wide text-muted">Sport</label>
+      {{ sport_picker(sports, x_model='sport') }}
+    </div>
+
+    <div class="mt-5 space-y-1.5">
+      <label for="competition_select" class="text-xs font-semibold uppercase tracking-wide text-muted">Compétition</label>
+      <select id="competition_select" x-model="competition"
+              class="w-full rounded-xl border border-border bg-ink-2 px-3.5 py-2.5 text-paper outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25">
+        <template x-for="comp in (competitionsBySport[sport] || [])" :key="comp.id">
+          <option :value="comp.id" x-text="comp.name"></option>
+        </template>
+      </select>
+    </div>
+  </div>
+
+  <div class="mt-6 space-y-3">
+    <template x-if="(fixturesByCompetition[competition] || []).length === 0">
+      <div class="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
+        Aucun match officiel répertorié pour cette compétition pour l'instant.
+      </div>
+    </template>
+    <template x-for="fixture in (fixturesByCompetition[competition] || [])" :key="fixture.id">
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/70 p-4">
+        <div>
+          <p class="font-display text-xl tracking-wide" x-text="fixture.home_name + ' vs ' + fixture.away_name"></p>
+          <p class="text-xs text-muted" x-text="fixture.start_time"></p>
+        </div>
+        <form method="post" :action="'{{ url_for('matches.quick_add', group_id=group['id']) }}/' + fixture.id">
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+            + Ajouter
+          </button>
+        </form>
+      </div>
+    </template>
+  </div>
+</div>
+{% endblock %}

@@ -69,7 +69,11 @@ Dans le dashboard Render → Settings → Environment, ajoute :
 - `SECRET_KEY` : une valeur aléatoire (généré automatiquement si déployé via `render.yaml` en Blueprint)
 
 Tous les matchs (tous sports) sont ajoutés à la main par l'admin du groupe — pas d'import
-automatique (aucune API gratuite avec accès à la saison en cours n'a été jugée satisfaisante).
+API en temps réel (aucune offre gratuite avec accès à la saison en cours n'a été jugée
+satisfaisante). Le bouton **"Ajout officiel rapide"** (onglet Matchs à venir, admin) propose en
+revanche un calendrier réel pré-rempli à la main (table `official_fixtures`) : sport → compétition
+→ liste de vrais matchs → un clic pour l'ajouter. Encore partiel (Ligue 1 J1 pour l'instant) —
+à compléter au fil de l'eau selon les compétitions demandées.
 
 ## Sports et compétitions
 

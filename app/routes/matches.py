@@ -129,6 +129,91 @@ def new_match(group_id):
     return render_template("group/match_new.html", **template_args)
 
 
+@bp.route("/officiel", methods=["GET"])
+@login_required
+def quick_add(group_id):
+    member = require_membership(group_id)
+    if not member["is_admin"]:
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    db = get_db()
+    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    sports = db.execute("SELECT * FROM sports ORDER BY sort_order ASC").fetchall()
+    competitions = db.execute("SELECT * FROM competitions ORDER BY sort_order ASC").fetchall()
+    competitions_by_sport = {}
+    for c in competitions:
+        competitions_by_sport.setdefault(c["sport_id"], []).append({"id": c["id"], "name": c["name"]})
+
+    fixtures = db.execute(
+        "SELECT * FROM official_fixtures ORDER BY start_time ASC"
+    ).fetchall()
+    fixtures_by_competition = {}
+    for f in fixtures:
+        fixtures_by_competition.setdefault(f["competition_id"], []).append(
+            {
+                "id": f["id"],
+                "home_name": f["home_name"],
+                "away_name": f["away_name"],
+                "start_time": f["start_time"].strftime("%a %d %b %Y, %Hh%M"),
+            }
+        )
+
+    return render_template(
+        "group/match_quick_add.html",
+        group=group,
+        member=member,
+        sports=sports,
+        competitions_by_sport=competitions_by_sport,
+        fixtures_by_competition=fixtures_by_competition,
+        active_tab="upcoming",
+    )
+
+
+@bp.route("/officiel/<fixture_id>", methods=["POST"])
+@login_required
+def quick_add_submit(group_id, fixture_id):
+    member = require_membership(group_id)
+    if not member["is_admin"]:
+        return redirect(url_for("groups.upcoming", group_id=group_id))
+
+    db = get_db()
+    fixture = db.execute(
+        """
+        SELECT f.*, c.sport_id AS sport_id
+        FROM official_fixtures f
+        JOIN competitions c ON c.id = f.competition_id
+        WHERE f.id = ?
+        """,
+        (fixture_id,),
+    ).fetchone()
+    if fixture is None:
+        abort(404)
+
+    existing = db.execute(
+        """
+        SELECT 1 FROM matches
+        WHERE group_id = ? AND home_name = ? AND away_name = ? AND start_time = ?
+        """,
+        (group_id, fixture["home_name"], fixture["away_name"], fixture["start_time"]),
+    ).fetchone()
+    if existing:
+        flash("Ce match est déjà dans le groupe.", "error")
+        return redirect(url_for("matches.quick_add", group_id=group_id))
+
+    match_id = new_id()
+    db.execute(
+        """
+        INSERT INTO matches (id, group_id, sport_id, competition_id, home_name, away_name, start_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (match_id, group_id, fixture["sport_id"], fixture["competition_id"], fixture["home_name"], fixture["away_name"], fixture["start_time"]),
+    )
+    db.commit()
+
+    flash(f"{fixture['home_name']} vs {fixture['away_name']} ajouté au groupe !", "success")
+    return redirect(url_for("matches.quick_add", group_id=group_id))
+
+
 @bp.route("/<match_id>")
 @login_required
 def detail(group_id, match_id):

@@ -9,10 +9,16 @@
     {{ matches | length }} match{{ 's' if matches | length > 1 else '' }} à venir
   </h2>
   {% if member['is_admin'] %}
-  <a href="{{ url_for('matches.new_match', group_id=group['id']) }}"
-     class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
-    + Ajouter un match
-  </a>
+  <div class="flex flex-wrap gap-2">
+    <a href="{{ url_for('matches.quick_add', group_id=group['id']) }}"
+       class="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-paper transition hover:border-cyan/50 hover:text-cyan">
+      Ajout officiel rapide
+    </a>
+    <a href="{{ url_for('matches.new_match', group_id=group['id']) }}"
+       class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-brand text-white shadow-glow-brand hover:bg-brand-2">
+      + Ajouter un match
+    </a>
+  </div>
   {% endif %}
 </div>
 

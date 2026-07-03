@@ -57,6 +57,19 @@ create table if not exists competitions (
   unique (sport_id, name)
 );
 
+-- Calendrier officiel pre-rempli a la main (recherche web), pour le menu
+-- "Ajout officiel rapide" -- pas d'API temps reel, donnees a completer au fil de l'eau.
+create table if not exists official_fixtures (
+  id uuid primary key default gen_random_uuid(),
+  competition_id uuid not null references competitions(id) on delete cascade,
+  home_name text not null,
+  away_name text not null,
+  start_time timestamptz not null,
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_official_fixtures_competition on official_fixtures(competition_id);
+
 create table if not exists matches (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references groups(id) on delete cascade,
@@ -157,5 +170,6 @@ alter table groups enable row level security;
 alter table members enable row level security;
 alter table sports enable row level security;
 alter table competitions enable row level security;
+alter table official_fixtures enable row level security;
 alter table matches enable row level security;
 alter table predictions enable row level security;
